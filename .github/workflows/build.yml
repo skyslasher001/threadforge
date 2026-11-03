@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pyembroidery pypdf playwright
+      - run: pip install pyembroidery "pypdf[image]" playwright
       - name: Embroidery files byte-identical to pyembroidery
         run: |
           npx tsx tests/embroidery_gen.ts tests/out
