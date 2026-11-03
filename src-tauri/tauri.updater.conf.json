@@ -1,0 +1,22 @@
+{
+  "bundle": { "createUpdaterArtifacts": true },
+  "plugins": {
+    "updater": {
+      "pubkey": "PASTE_THE_CONTENTS_OF_threadforge.key.pub_HERE",
+      "endpoints": ["https://YOUR-RELEASE-HOST/threadforge/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  },
+  "app": {
+    "security": {
+      "capabilities": [
+        "default",
+        {
+          "identifier": "updater",
+          "windows": ["main"],
+          "permissions": ["updater:default", "process:allow-restart"]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,9 @@
+node_modules
+dist
+dist-single
+src-tauri/target
+src-tauri/gen
+tests/out
+e2e-out
+*.key
+.DS_Store

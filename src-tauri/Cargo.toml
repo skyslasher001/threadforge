@@ -1,0 +1,32 @@
+[package]
+name = "threadforge"
+version = "0.3.0"
+description = "THREADFORGE - clothing design and mockup studio"
+edition = "2021"
+
+[lib]
+name = "threadforge_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+default = []
+# Signed auto-updates. Build with: npm run build:updater (see README)
+updater = ["dep:tauri-plugin-updater", "dep:tauri-plugin-process"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-updater = { version = "2", optional = true }
+tauri-plugin-process = { version = "2", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true
