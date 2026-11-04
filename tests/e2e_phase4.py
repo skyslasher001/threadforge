@@ -3,7 +3,7 @@ Phase 4 (Showcase) end-to-end checks through the real UI: colorway matrix, socia
 3D viewer + turntable, photo mockups, line sheet, present mode and the Higgsfield flow (mock mode).
 Usage: python3 tests/e2e_phase4.py <dist-single/index.html> <out-dir> [chrome]
 """
-import asyncio, os, sys, time
+import asyncio, os, shutil, subprocess, sys, time
 from playwright.async_api import async_playwright
 from PIL import Image
 
@@ -112,6 +112,45 @@ async def main():
         await check("store image: pure white background, garment centered", product_white)
 
         await pg.screenshot(path=f"{OUT}/p4-social.png")
+
+        # ---------------- 3D ----------------
+        await tab("3D")
+        async def three_d():
+            await pg.wait_for_function("(() => { const t = document.querySelector('[data-testid=v3d-stats]'); return t && parseInt(t.textContent.replace(/,/g, '')) > 1000; })()", timeout=30000)
+            await pg.wait_for_timeout(800)
+            path = f"{OUT}/p4-3d.png"; await pg.locator("[data-testid=v3d]").screenshot(path=path)
+            im = Image.open(path).convert("L"); w, h = im.size
+            px = [im.getpixel((x, y)) for x in range(0, w, 7) for y in range(0, h, 7)]
+            mean = sum(px) / len(px); var = sum((v - mean) ** 2 for v in px) / len(px)
+            if var < 200: raise AssertionError(f"flat image, variance {var:.0f}")
+            return (await pg.inner_text("[data-testid=v3d-stats]")) + f", pixel variance {var:.0f}"
+        await check("3D viewer builds a lit mesh from the flats", three_d)
+
+        async def three_back():
+            await pg.click(".sc-toolbar button:text-is('Back')"); await pg.wait_for_timeout(500)
+            await pg.locator("[data-testid=v3d]").screenshot(path=f"{OUT}/p4-3d-back.png")
+            return await pg.evaluate("window.__threadforge.show.getState().spin") is False
+        await check("camera presets stop the spin and turn to the back", three_back)
+
+        async def turntable():
+            await pg.click(".section .seg button:text-is('4 s')")
+            # software GL in CI renders ~1 fps at 1080p: record a 2-second turn (60 frames) to keep the suite quick
+            await pg.evaluate("window.__threadforge.show.getState().set({ recSeconds: 2 })")
+            t = time.time()
+            path = await download(lambda: pg.click("text=Record turntable"), "turntable", timeout=300000)
+            took = time.time() - t
+            size = os.path.getsize(path)
+            head = open(path, "rb").read(64)
+            kind = "webm" if head[:4] == b"\x1aE\xdf\xa3" else "mp4" if b"ftyp" in head[:12] else "?"
+            if size < 50_000 or kind == "?": raise AssertionError(f"{size} bytes, {head[:12]!r}")
+            info = f"{kind}, {size/1e6:.1f} MB, recorded in {took:.1f} s"
+            if shutil.which("ffprobe"):
+                out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-count_frames", "-show_entries", "stream=width,height,nb_read_frames", "-of", "csv=p=0", path], capture_output=True, text=True).stdout.strip()
+                w, h, n = (int(x) for x in out.split(",")[:3])
+                if (w, h) != (1080, 1080) or n != 60: raise AssertionError(f"ffprobe: {out}")
+                info += f", {w}x{h}, {n} frames"
+            return info
+        await check("turntable records one full turn to video", turntable)
         print(f"\nShowcase flow took {time.time() - t0:.1f} s")
         await b.close()
 

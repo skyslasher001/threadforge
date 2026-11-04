@@ -16,6 +16,9 @@ export interface ShowState {
   spinSpeed: number; // turns per 10 s
   light: "studio" | "warm" | "night";
   recording: number | null; // 0..1 progress
+  backdrop: string;
+  recFormat: string;
+  recSeconds: number;
   // photo mockups
   photoId: string | null;
   // line sheet
@@ -37,6 +40,9 @@ export const useShow = create<ShowState>((set) => ({
   spinSpeed: 1,
   light: "studio",
   recording: null,
+  backdrop: "#E9E7E2",
+  recFormat: "square",
+  recSeconds: 6,
   photoId: null,
   sheetStyles: [],
   sheetPerPage: 4,

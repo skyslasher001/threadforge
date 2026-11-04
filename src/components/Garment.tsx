@@ -118,10 +118,13 @@ interface Props {
   overlay?: ReactNode; // rendered above, clipped to the body (e.g. hood shadow)
   lite?: boolean; // thumbnails: skip expensive filters
   relief?: number; // 0..1 strength of the lit fabric surface
+  shadow?: boolean; // drop shadow under the garment (off for 3D textures)
+  shading?: number; // 0..1 strength of the painted light/fold shading (3D lights its own)
+  outline?: boolean; // dark silhouette line (off for 3D textures, where it would show on the side seam)
 }
 
 /** One garment view: fabric, ribs, shading, seams, plus clipped decoration. */
-export const GarmentView = memo(function GarmentView({ uid, geom, fabric, trimFabric, body, trim, showStitches = true, children, lite, relief = 0.7 }: Props) {
+export const GarmentView = memo(function GarmentView({ uid, geom, fabric, trimFabric, body, trim, showStitches = true, children, lite, relief = 0.7, shadow = true, shading = 1, outline = true }: Props) {
   const dk = isDark(body);
   const lineCol = dk ? "rgba(255,255,255,0.22)" : "rgba(15,15,20,0.55)";
   const seamCol = dk ? "rgba(255,255,255,0.18)" : "rgba(15,15,20,0.35)";
@@ -162,7 +165,7 @@ export const GarmentView = memo(function GarmentView({ uid, geom, fabric, trimFa
       </defs>
 
       {/* body */}
-      <g filter={lite ? undefined : "url(#tf-shadow)"}>
+      <g filter={lite || !shadow ? undefined : "url(#tf-shadow)"}>
         {geom.hood && <path d={geom.hood} fill={`url(#${ids.fab})`} />}
         <path d={geom.body} fill={`url(#${ids.fab})`} />
       </g>
@@ -191,7 +194,7 @@ export const GarmentView = memo(function GarmentView({ uid, geom, fabric, trimFa
       )}
 
       {/* shading */}
-      <g clipPath={`url(#${ids.clip})`} style={{ pointerEvents: "none" }}>
+      <g clipPath={`url(#${ids.clip})`} style={{ pointerEvents: "none" }} opacity={shading}>
         <rect x={b.x0} y={b.y0} width={b.x1 - b.x0} height={b.y1 - b.y0} fill={`url(#${ids.sideShade})`} />
         <rect x={b.x0} y={b.y0} width={b.x1 - b.x0} height={b.y1 - b.y0} fill={`url(#${ids.vShade})`} />
         <rect x={b.x0} y={b.y0} width={b.x1 - b.x0} height={b.y1 - b.y0} fill={`url(#${ids.sheen})`} />
@@ -212,9 +215,9 @@ export const GarmentView = memo(function GarmentView({ uid, geom, fabric, trimFa
         {geom.seams.map((d, i) => <path key={i} d={d} stroke={seamCol} strokeWidth={lw * 0.9} />)}
         {geom.ribs.map((d, i) => <path key={i} d={d} stroke={lineCol} strokeWidth={lw * 0.9} />)}
         {showStitches && geom.stitches.map((d, i) => <path key={i} d={d} stroke={stitchCol} strokeWidth={0.035} strokeDasharray="0.14 0.09" />)}
-        {geom.hood && <path d={geom.hood} stroke={lineCol} strokeWidth={lw} />}
+        {outline && geom.hood && <path d={geom.hood} stroke={lineCol} strokeWidth={lw} />}
         {geom.hoodInner && <path d={geom.hoodInner} stroke={lineCol} strokeWidth={lw} />}
-        <path d={geom.body} stroke={lineCol} strokeWidth={lw} strokeLinejoin="round" />
+        {outline && <path d={geom.body} stroke={lineCol} strokeWidth={lw} strokeLinejoin="round" />}
         {geom.cords?.map((c, i) => (
           <g key={i}>
             <circle cx={c.a[0]} cy={c.a[1]} r={0.22} fill={shade(body, dk ? 0.3 : -0.3)} stroke={lineCol} strokeWidth={0.04} />

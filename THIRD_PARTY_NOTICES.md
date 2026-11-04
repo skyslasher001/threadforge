@@ -33,3 +33,14 @@ SOFTWARE.
 ## Fonts
 
 Inter and JetBrains Mono are bundled through @fontsource under the SIL Open Font License 1.1.
+
+## Bundled npm libraries (MIT)
+
+The app bundles these MIT-licensed libraries; their license text ships in each package under `node_modules/<name>/LICENSE`.
+
+| Library | Used for | Copyright |
+| --- | --- | --- |
+| three | 3D viewer | Copyright © 2010-2024 three.js authors |
+| mp4-muxer | Turntable MP4 files | Copyright (c) 2023 Vanilagy |
+| webm-muxer | Turntable WebM fallback | Copyright (c) 2022 Vanilagy |
+| jsPDF | PDF export | Copyright (c) 2010-2025 James Hall, yWorks GmbH and contributors |

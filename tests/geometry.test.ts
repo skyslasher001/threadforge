@@ -43,3 +43,28 @@ if (failures.length) {
   console.log(Array.from(new Set(failures)).slice(0, 30).join("\n"));
   process.exit(1);
 }
+
+// ---------- 3D inflate: closed shell, snapped to the silhouette ----------
+{
+  const { inflate, profile } = await import("../src/lib/inflate");
+  // a 20 x 12 in rectangle inside a 24 x 16 in mask at 8 px/in
+  const res = 8, mc = 24 * res, mr = 16 * res;
+  const mask = new Uint8Array(mc * mr);
+  for (let y = 2 * res; y < 14 * res; y++) for (let x = 2 * res; x < 22 * res; x++) mask[y * mc + x] = 1;
+  const sh = inflate({ mask, maskCols: mc, maskRows: mr, res, cell: 0.25, depth: 4, reach: 5 });
+  let maxZ = 0, edgeOk = true, offEdge = 0;
+  for (let i = 0; i < sh.x.length; i++) {
+    maxZ = Math.max(maxZ, sh.z[i]);
+    const x = sh.x[i], y = sh.y[i];
+    const out = x < 2 || x > 22 || y < 2 || y > 14;
+    if (out && sh.z[i] !== 0) edgeOk = false;
+    // every vertex used by a triangle lies inside or within half a mask pixel of the edge
+    const dx = Math.max(2 - x, 0, x - 22), dy = Math.max(2 - y, 0, y - 14);
+    if (Math.hypot(dx, dy) > 0.5 / res + 1e-4 && sh.z[i] === 0 && Array.prototype.includes.call(sh.index, i)) offEdge++;
+  }
+  if (!(maxZ > 3.5 && maxZ <= 4)) throw new Error(`inflate depth ${maxZ}`);
+  if (!edgeOk) throw new Error("outside vertex lifted off the flat");
+  if (offEdge) throw new Error(`${offEdge} edge vertices not snapped to the silhouette`);
+  if (profile(0, 4, 5) !== 0 || Math.abs(profile(5, 4, 5) - 4) > 1e-9) throw new Error("profile ends");
+  console.log(`inflate: ${sh.index.length / 3} triangles, depth ${maxZ.toFixed(2)} in, edge snapped`);
+}

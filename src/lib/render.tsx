@@ -20,6 +20,10 @@ export interface RenderOpts {
   margin?: number; // inches around the garment
   previews?: Record<string, string>; // processed decoration previews by graphic id
   stitches?: boolean;
+  box?: { x0: number; y0: number; x1: number; y1: number }; // fixed render window in inches (overrides margin)
+  shadow?: boolean;
+  shading?: number;
+  outline?: boolean;
 }
 
 export interface Rendered {
@@ -34,7 +38,7 @@ function graphicEl(g: Graphic, src: string) {
   const filter = g.method === "embroidery" ? "url(#tf-shadow)" : g.method === "screen" ? "url(#tf-print)" : undefined;
   return (
     <g key={g.id} transform={`translate(${g.x} ${g.y}) rotate(${g.rotation})`}>
-      <image href={src} x={-g.w / 2} y={-h / 2} width={g.w} height={h} preserveAspectRatio="none" filter={filter} opacity={g.method === "dtg" ? 0.93 : 1} />
+      <image href={src} x={-g.w / 2} y={-h / 2} width={g.w} height={h} preserveAspectRatio="none" filter={filter} opacity={g.method === "dtg" ? 0.93 : g.method === "screen" ? 0.97 : 1} />
     </g>
   );
 }
@@ -46,15 +50,16 @@ export async function renderGarment(d: Design, o: RenderOpts): Promise<Rendered>
   const m = gradedSpec(d.base, d.grade, d.previewSize);
   const geom = buildGarment(d.template, o.view, m, d.parts);
   const margin = o.margin ?? 1.5;
-  const b = geom.bounds;
-  const x0 = b.x0 - margin, y0 = b.y0 - margin, w = b.x1 - b.x0 + margin * 2, h = b.y1 - b.y0 + margin * 2;
+  const b = o.box ?? { x0: geom.bounds.x0 - margin, y0: geom.bounds.y0 - margin, x1: geom.bounds.x1 + margin, y1: geom.bounds.y1 + margin };
+  const x0 = b.x0, y0 = b.y0, w = b.x1 - b.x0, h = b.y1 - b.y0;
   const uid = `off${++seq}`;
   const graphics = d.graphics.filter((g) => g.view === o.view && g.visible);
   const svg = renderToStaticMarkup(
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={`${x0} ${y0} ${w} ${h}`} width={Math.round(w * k)} height={Math.round(h * k)}>
       <SvgFilters />
       <GarmentView uid={uid} geom={geom} fabric={fabricFor(d, d.fabricId)} trimFabric={fabricFor(d, d.trimFabricId)}
-        body={o.body ?? d.bodyColor} trim={o.trim ?? d.trimColor} showStitches={o.stitches ?? true}>
+        body={o.body ?? d.bodyColor} trim={o.trim ?? d.trimColor} showStitches={o.stitches ?? true}
+        shadow={o.shadow ?? true} shading={o.shading ?? 1} outline={o.outline ?? true}>
         {graphics.map((g) => graphicEl(g, g.method === "dtg" ? g.src : o.previews?.[g.id] ?? g.src))}
       </GarmentView>
     </svg>,

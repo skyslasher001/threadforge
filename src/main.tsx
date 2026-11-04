@@ -1,11 +1,12 @@
 import { StrictMode } from "react";
+import { useShow } from "./state/showcase";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import App from "./App";
 import { useStore } from "./state/store";
 
 // Debug/test hook: lets automated tests and the dev console inspect app state.
-(window as unknown as { __threadforge: unknown }).__threadforge = { store: useStore };
+(window as unknown as { __threadforge: unknown }).__threadforge = { store: useStore, show: useShow };
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -22,9 +22,11 @@
     "@tauri-apps/plugin-process": "^2.4.0",
     "@tauri-apps/plugin-updater": "^2.14.1",
     "jspdf": "^4.2.1",
+    "mp4-muxer": "^5.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "three": "^0.170.0",
+    "webm-muxer": "^5.1.4",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
