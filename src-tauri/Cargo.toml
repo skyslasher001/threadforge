@@ -1,6 +1,6 @@
 [package]
 name = "threadforge"
-version = "0.4.0"
+version = "0.5.0"
 description = "THREADFORGE - clothing design and mockup studio"
 edition = "2021"
 

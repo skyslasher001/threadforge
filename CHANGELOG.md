@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.0 — Phase 5 (pro production + automation)
+
+**Embroidery**
+- Satin columns: strokes, rays, rings and curves from 1.2 to 6 mm wide are sewn as satin that follows the shape (center-line tracing, center-run underlay, stitches square to the stroke all the way round). Small lettering stays fill.
+- New machine formats: **JEF** (Janome) and **VP3** (Husqvarna Viking / Pfaff), byte-identical to pyembroidery like DST, PES and EXP.
+
+**Brand Kit** (Showcase → Brand kit)
+- Brand name, tagline, handle, logo (background removed and trimmed), palette with a primary color, heading and body type, label colors, Made in and RN number. One kit for every project.
+- Print-ready labels PDF: woven neck label, care label with fiber, care text and symbols, and a two-sided hang tag with style, colorway, sizes and MSRP, at actual size with crop marks.
+- Used automatically by social images (logo band, brand type, palette backgrounds), the line sheet, Present and the tech pack. Logos are recolored where they'd vanish on a background. Palette → colorways in one click.
+
+**Automation**
+- **Export everything** (Ctrl+Shift+E): mockups and social images for every colorway, colorway matrix, photo mockups, tech pack, line sheet, spec CSV, embroidery files in any format, film positives, labels and the project, in one ZIP with a manifest.
+- **Macros**: record style changes (fabric, fit, colors, colorways, measurements, tech pack settings, artwork method) and an export, then replay them on any design in one undo step, or on a batch of project files.
+- **Hot folder** (desktop): drop artwork into a folder and each file becomes a finished design (placed on your template, optional macro) with its deliverables in `THREADFORGE out`.
+
+**Fixes**
+- Escape closes the new dialogs; tag chips no longer stretch in tall columns.
+
 ## 0.4.0 — Phase 4 (Showcase)
 
 **Showcase mode (key 5)**

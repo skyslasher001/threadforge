@@ -21,8 +21,8 @@ The first build downloads Rust crates and takes 5–10 minutes; later builds are
 
 Your installers land in:
 
-- `src-tauri\target\release\bundle\nsis\THREADFORGE_0.4.0_x64-setup.exe`  ← run this one
-- `src-tauri\target\release\bundle\msi\THREADFORGE_0.4.0_x64_en-US.msi`
+- `src-tauri\target\release\bundle\nsis\THREADFORGE_0.5.0_x64-setup.exe`  ← run this one
+- `src-tauri\target\release\bundle\msi\THREADFORGE_0.5.0_x64_en-US.msi`
 - the bare app: `src-tauri\target\release\threadforge.exe`
 
 ### Day-to-day development
@@ -71,7 +71,7 @@ npm run build:updater
 4. Upload the installer, its `.sig` file and a `latest.json` to your endpoint.
    In the app: Workspaces menu → **Check for updates**.
 
-## What's in this build (v0.4 — Phases 1 to 4)
+## What's in this build (v0.5 — Phases 1 to 5)
 
 | Area | What works |
 | --- | --- |
@@ -86,9 +86,11 @@ npm run build:updater
 | Drawing | 12 brush styles (tech pen, brush pen, marker, graphite, charcoal, watercolor, spray, airbrush, halftone, riso, chrome, neon), pen pressure, stabilizer, QuickShape (hold to snap a line, ellipse or box), mirror, eraser, clip-to-garment, **Restyle** a layer into another style, **Sketch to flat** cleanup |
 | Artwork | Drop / paste / pick images, auto-fit to print zones, drag / scale / rotate, snap to zones + center, arrow-key nudging, background removal |
 | Screen print | Color separation, underbase, ink system (plastisol, water-based, discharge, puff, metallic, glitter), suggested print order with mesh counts, **film positives PDF at actual size** (one page per screen, registration marks, 1 in check bar) |
-| Embroidery | **Auto-digitizer**: region cleanup, tatami fill (0.4 mm) with underlay and pull compensation, shape sections to minimize trims, lock stitches; real stitch preview and stitch-out player; hoop fit; **DST, PES and EXP files** byte-identical to pyembroidery's encoders |
+| Embroidery | **Auto-digitizer**: region cleanup, tatami fill (0.4 mm) with underlay and pull compensation, **satin columns** that follow strokes and curves (1.2–6 mm), shape sections to minimize trims, lock stitches; real stitch preview and stitch-out player; hoop fit; **DST, PES, EXP, JEF and VP3 files** byte-identical to pyembroidery's encoders |
 | Tech pack | Tech Pack mode: style info, BOM editor with fabric yardage estimate, costing sheet (your rates, margin, retail), construction/care/labels/packaging notes, revision log; **10-page PDF** (overview, flats, measurement diagram, graded spec, BOM, colorways, artwork, construction, costing, revisions) |
 | Showcase | **Colorway matrix** (live renders, suggestions, matrix PNG); **3D viewer** with lights, backdrops and snapshot; **turntable video** (seamless loop, MP4/WebM, square / vertical / wide); **photo mockups** (four-corner perspective warp lit by the photo's folds); **Higgsfield on-model renders** and motion clips with price-first jobs; **social exports** (4:5, 1:1, 9:16, 2000 px store image); **line sheet PDF** with order form; full-screen **Present** |
+| Brand Kit | Logo, palette, type, tagline and handle shared by every project; **labels PDF** (woven neck label, care label with symbols, two-sided hang tag) at actual size; applied to social, line sheet, Present and tech pack |
+| Automation | **Export everything** to one ZIP (every deliverable, every colorway); **macros** that record style changes and replay them on any design or a batch of projects; **hot folder** that turns dropped artwork into finished deliverables |
 | Checks | DPI meter, fabric/method compatibility, screen count, hoop size, stitch density, with one-click fixes |
 | Files | Autosave + crash recovery, Save/Open `.tforge`, mockup PNG (front + back), films PNG, spec CSV, labeled undo/redo (150 steps) |
 
@@ -108,7 +110,8 @@ npm run build:updater
 | L | Layers tab | Y | History tab |
 | Ctrl+\\ | Hide / show panels | Hold pen still | QuickShape snap |
 | 1 / 2 / 3 / 4 / 5 | Design / Print Prep / Measurements / Tech Pack / Showcase | Tab | Focus mode |
-| ← → Space | Next / previous slide (Present) | Esc | Exit Present |
+| ← → Space | Next / previous slide (Present) | Esc | Exit Present / close dialog |
+| Ctrl+Shift+E | Export everything (ZIP) | Ctrl+K → "Macros" | Record and replay |
 
 ## Gate results (measured in this build)
 
@@ -124,12 +127,19 @@ npm run build:updater
 ## Tests
 
 ```bash
-npm test          # typecheck, 6,048 garment variants, 3D inflate + photo warp math, embroidery files vs pyembroidery
-npm run test:e2e  # 176 UI checks in headless Chrome (pip install playwright pyembroidery "pypdf[image]")
+npm test          # typecheck, 6,048 garment variants, 3D inflate + photo warp math, 2 embroidery designs x 5 formats vs pyembroidery
+npm run test:e2e  # 194 UI checks in headless Chrome (pip install playwright pyembroidery "pypdf[image]")
 tests/hf_bridge.sh  # Rust Higgsfield bridge against a mock API (needs Rust)
 ```
 
-## Not built yet (Phase 5)
+## Hot folder (desktop)
 
-Brand Kit, macros, hot folder, cloth-simulated 3D drape from real pattern pieces,
-JEF/VP3 embroidery formats and satin-column digitizing. See `DECISIONS.md` and `CHANGELOG.md`.
+Workspaces menu → **Hot folder…** → pick how artwork is placed (side, print zone, method, colors),
+an optional macro and which files to write → **Choose folder and start**. Every PNG, JPG, WebP or SVG
+you drop in becomes `THREADFORGE out/<artwork name>/` with the deliverables. The current design is the
+template. **Resume last folder** picks up after a restart.
+
+## Next
+
+Cloth-simulated 3D drape from real pattern pieces (needs a pattern/marker module), a lettering tool
+with satin text, vector type in label PDFs. See `DECISIONS.md` and `CHANGELOG.md`.
