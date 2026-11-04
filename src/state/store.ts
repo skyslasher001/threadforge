@@ -6,7 +6,7 @@ import { TEMPLATES } from "../data/measurements";
 import { readAppAutosave, writeAppAutosave } from "../lib/native";
 
 export type Mode = "design" | "print" | "measure" | "techpack" | "showcase";
-export type ShowTab = "colorways" | "3d" | "photo" | "social" | "linesheet" | "ai";
+export type ShowTab = "colorways" | "3d" | "photo" | "social" | "linesheet" | "ai" | "brand";
 export type SideTab = "props" | "layers" | "history";
 
 export interface Brush {

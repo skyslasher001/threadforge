@@ -4,6 +4,7 @@ import type { Design } from "../../types";
 import { SOCIAL, socialImage, type SocialFormat } from "../../lib/render";
 import { isDark } from "../../data/fabrics";
 import { techpackOf } from "../../lib/production";
+import { brandName, useBrand } from "../../state/brand";
 import { download, slug } from "../../lib/exporting";
 import { Toggle } from "../Controls";
 import { IcDownload } from "../Icons";
@@ -26,7 +27,8 @@ export async function renderSocial(fmt: SocialFormat) {
   const bg = fmt.id === "product" ? "#FFFFFF" : sh.socialBg;
   return socialImage(d, {
     format: fmt, background: bg, dark: isDark(bg), showBack: sh.socialBack,
-    brand: d.showcase?.brand || techpackOf(d).brand || "", caption: d.showcase?.caption ?? "",
+    brand: brandName(d), caption: d.showcase?.caption ?? "",
+    logo: { ...useBrand.getState().kit, logo: sh.socialLogo ? useBrand.getState().kit.logo : null },
   }, previewsOf(d, st.processed));
 }
 
@@ -35,7 +37,8 @@ export function SocialView() {
   const sh = useShow();
   const showcase = useStore((s) => s.design.showcase);
   const fmt = SOCIAL.find((f) => f.id === sh.socialFormat) ?? SOCIAL[0];
-  const key = [sig, fmt.id, sh.socialBg, sh.socialBack, sh.socialColorway, showcase?.brand, showcase?.caption].join("|");
+  const kit = useBrand((s) => s.kit);
+  const key = [sig, fmt.id, sh.socialBg, sh.socialBack, sh.socialColorway, sh.socialLogo, showcase?.brand, showcase?.caption, kit.updatedAt].join("|");
   const img = useAsync(key, async () => (await renderSocial(fmt)).toDataURL("image/png"), 120);
   return (
     <div className="sc-body">
@@ -70,16 +73,17 @@ export function SocialPanel() {
       <div className="section">
         <span className="section-title">Background</span>
         <div className="swatches" style={{ gridTemplateColumns: "repeat(10, 1fr)" }}>
-          {SOCIAL_BGS.map(([n, c]) => <button key={c} title={n} className={`swatch${sh.socialBg === c ? " on" : ""}`} style={{ background: c }} onClick={() => sh.set({ socialBg: c })} />)}
+          {[...useBrand.getState().kit.colors.map((c) => [c.name, c.hex] as [string, string]), ...SOCIAL_BGS].filter(([, c], i, a) => a.findIndex((x) => x[1].toUpperCase() === c.toUpperCase()) === i).slice(0, 20).map(([n, c]) => <button key={c} title={n} className={`swatch${sh.socialBg === c ? " on" : ""}`} style={{ background: c }} onClick={() => sh.set({ socialBg: c })} />)}
         </div>
         <span className="faint small">Store product images always use pure white.</span>
       </div>
       <div className="section">
         <label className="field"><span className="label">Brand line</span>
-          <input className="input" placeholder={techpackOf(d).brand || "Your brand"} value={sc.brand} onFocus={() => checkpoint("Edit brand")} onChange={(e) => setSc({ brand: e.target.value })} /></label>
+          <input className="input" placeholder={techpackOf(d).brand || useBrand.getState().kit.name || "Your brand"} value={sc.brand} onFocus={() => checkpoint("Edit brand")} onChange={(e) => setSc({ brand: e.target.value })} /></label>
         <label className="field"><span className="label">Caption</span>
           <input className="input" placeholder="e.g. Drop 01 · Friday 6pm" value={sc.caption} onFocus={() => checkpoint("Edit caption")} onChange={(e) => setSc({ caption: e.target.value })} /></label>
         <Toggle on={sh.socialBack} onChange={(v) => sh.set({ socialBack: v })} label="Show front and back" />
+        <Toggle on={sh.socialLogo} onChange={(v) => sh.set({ socialLogo: v })} label="Brand Kit logo at the top" />
       </div>
       <div className="section">
         <span className="section-title">Colorway</span>

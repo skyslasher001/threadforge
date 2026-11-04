@@ -7,7 +7,8 @@ import { fabricFor, fiberLabel, ozPerSqYd } from "../data/fabrics";
 import { graphicHeight } from "./checks";
 import { technicalFlatSvg, svgToPng } from "./flats";
 import { INKS, costSheet, hoopFor, printOrder, techpackOf } from "./production";
-import { digitizeGraphic, stitchMinutes } from "./imaging";
+import { digitizeGraphic, loadImage, stitchMinutes } from "./imaging";
+import { brandKit, brandName } from "../state/brand";
 
 const W = 11, H = 8.5, M = 0.5;
 const ACCENT: [number, number, number] = [43, 89, 195];
@@ -26,7 +27,7 @@ function header(c: Ctx, page: string) {
   pdf.setFillColor(17, 17, 20).rect(0, 0, W, 0.62, "F");
   pdf.setTextColor(255).setFont("helvetica", "bold").setFontSize(13).text(d.name, M, 0.4);
   pdf.setFont("helvetica", "normal").setFontSize(9).setTextColor(190);
-  const meta = [tp.brand, tp.styleNumber && `Style ${tp.styleNumber}`, tp.season, `Rev ${tp.revision || "A"}`].filter(Boolean).join("  ·  ");
+  const meta = [brandName(d), tp.styleNumber && `Style ${tp.styleNumber}`, tp.season, `Rev ${tp.revision || "A"}`].filter(Boolean).join("  ·  ");
   pdf.text(meta, W - M, 0.4, { align: "right" });
   pdf.setTextColor(...ACCENT).setFont("helvetica", "bold").setFontSize(15).text(page, M, 1.05);
   pdf.setTextColor(20);
@@ -82,6 +83,14 @@ export async function buildTechPack(d: Design, mockupPng: string | null, process
 
   // 1 — Cover
   header(c, "Overview");
+  const kit = brandKit();
+  if (kit.logo) {
+    const li = await loadImage(kit.logo).catch(() => null);
+    if (li) {
+      const s = Math.min(1.6 / li.naturalWidth, 0.5 / li.naturalHeight);
+      pdf.addImage(kit.logo, "PNG", W - M - li.naturalWidth * s, 0.8, li.naturalWidth * s, li.naturalHeight * s);
+    }
+  }
   if (mockupPng) {
     const img = await new Promise<HTMLImageElement>((r) => { const i = new Image(); i.onload = () => r(i); i.src = mockupPng; });
     const maxW = 6.3, maxH = 6.2;
@@ -90,7 +99,7 @@ export async function buildTechPack(d: Design, mockupPng: string | null, process
   }
   const parts = d.parts;
   const info: [string, string][] = [
-    ["Style name", d.name], ["Style number", tp.styleNumber || "—"], ["Season", tp.season || "—"], ["Brand", tp.brand || "—"], ["Designer", tp.designer || "—"],
+    ["Style name", d.name], ["Style number", tp.styleNumber || "—"], ["Season", tp.season || "—"], ["Brand", brandName(d) || "—"], ["Designer", tp.designer || "—"],
     ["Garment", t.name], ["Fit", parts.fit[0].toUpperCase() + parts.fit.slice(1)],
     ["Neckline / sleeve", `${t.hood ? "Hood" : parts.neck === "v" ? "V-neck" : parts.neck === "mock" ? "Mock neck" : "Crew"} / ${parts.sleeve === "setin" ? "Set-in" : parts.sleeve === "raglan" ? "Raglan" : "Drop shoulder"}`],
     ["Pocket", parts.pocket === "none" ? "None" : parts.pocket === "chest" ? "Chest patch" : "Kangaroo"],

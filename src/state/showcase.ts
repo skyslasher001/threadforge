@@ -11,6 +11,7 @@ export interface ShowState {
   socialBg: string;
   socialBack: boolean;
   socialColorway: string | null; // colorway id, null = current colors
+  socialLogo: boolean;
   // 3D
   spin: boolean;
   spinSpeed: number; // turns per 10 s
@@ -39,6 +40,7 @@ export const useShow = create<ShowState>((set) => ({
   socialBg: "#EDE9E1",
   socialBack: false,
   socialColorway: null,
+  socialLogo: true,
   spin: true,
   spinSpeed: 1,
   light: "studio",

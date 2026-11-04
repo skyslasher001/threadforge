@@ -8,6 +8,9 @@ import { costSheet, techpackOf } from "./production";
 import { processGraphic } from "./imaging";
 import { renderGarment } from "./render";
 import { previewsOf } from "../state/showcase";
+import { brandKit, brandName, fontOf, logoOn } from "../state/brand";
+import { isDark } from "../data/fabrics";
+import { loadImage } from "./imaging";
 
 const W = 11, H = 8.5, M = 0.5;
 const INK: [number, number, number] = [20, 20, 24];
@@ -72,7 +75,16 @@ const fit = (w: number, h: number, bw: number, bh: number) => { const s = Math.m
 export async function buildLineSheet(styles: SheetStyle[], o: SheetOpts, onProgress?: (p: number) => void): Promise<Uint8Array> {
   if (!styles.length) throw new Error("Add at least one style");
   const lead = techpackOf(styles[0].design);
-  const brand = lead.brand || styles[0].design.showcase?.brand || "";
+  const brand = brandName(styles[0].design);
+  const kit = brandKit();
+  const pdfFont = fontOf(kit.headingFont).pdf;
+  const coverBg = kit.colors[0]?.hex ?? "#111114";
+  const logoAt = async (bg: string) => {
+    const url = await logoOn(bg, kit).catch(() => null);
+    return url ? await loadImage(url).then((img) => ({ url, w: img.naturalWidth, h: img.naturalHeight })).catch(() => null) : null;
+  };
+  const coverLogo = await logoAt(coverBg);
+  const logo = await logoAt("#FFFFFF");
   const season = lead.season;
   const pdf = new jsPDF({ unit: "in", format: "letter", orientation: "landscape", compress: true });
   pdf.setProperties({ title: `${brand || "Line"} sheet${season ? " " + season : ""}`, creator: "THREADFORGE" });
@@ -80,18 +92,26 @@ export async function buildLineSheet(styles: SheetStyle[], o: SheetOpts, onProgr
   const total = 1 + pages + 1;
 
   // ---- cover ----
-  pdf.setFillColor(17, 17, 20).rect(0, 0, W, H, "F");
+  pdf.setFillColor(...rgb(coverBg)).rect(0, 0, W, H, "F");
+  const coverInk: [number, number, number] = isDark(coverBg) ? [255, 255, 255] : [20, 20, 24];
+  const coverSoft: [number, number, number] = isDark(coverBg) ? [190, 190, 196] : [80, 80, 90];
   const hero = await png(styles[0].design, styles[0].processed, "front", 40);
   const hf = fit(hero.w, hero.h, 5.2, 6.2);
   pdf.setFillColor(255, 255, 255).roundedRect(W - M - 5.6, (H - 6.6) / 2, 5.6, 6.6, 0.12, 0.12, "F");
   pdf.addImage(hero.url, "JPEG", W - M - 2.8 - hf.w / 2, H / 2 - hf.h / 2, hf.w, hf.h);
-  pdf.setTextColor(255).setFont("helvetica", "bold").setFontSize(40);
+  if (coverLogo) {
+    const lf = fit(coverLogo.w, coverLogo.h, 3.2, 0.8);
+    pdf.addImage(coverLogo.url, "PNG", M + 0.1, 0.9, lf.w, lf.h);
+  }
+  pdf.setTextColor(...coverInk).setFont(pdfFont, "bold").setFontSize(40);
   pdf.text(pdf.splitTextToSize((brand || "Collection").toUpperCase(), 4.4), M + 0.1, 2.4);
-  pdf.setFont("helvetica", "normal").setFontSize(16).setTextColor(190);
+  pdf.setFont("helvetica", "normal").setFontSize(16).setTextColor(...coverSoft);
   pdf.text([season, "Line sheet"].filter(Boolean).join("  ·  "), M + 0.1, 3.5);
-  pdf.setFontSize(11).setTextColor(150);
-  pdf.text(`${styles.length} style${styles.length === 1 ? "" : "s"}  ·  ${styles.reduce((n, s) => n + Math.max(1, s.design.colorways.length), 0)} colorways`, M + 0.1, 3.9);
-  pdf.text(new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }), M + 0.1, 4.2);
+  if (kit.tagline) pdf.setFontSize(12).text(pdf.splitTextToSize(kit.tagline, 4.4), M + 0.1, 3.85);
+  pdf.setFontSize(11).setTextColor(...coverSoft);
+  pdf.text(`${styles.length} style${styles.length === 1 ? "" : "s"}  ·  ${styles.reduce((n, s) => n + Math.max(1, s.design.colorways.length), 0)} colorways`, M + 0.1, 4.5);
+  pdf.text(new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }), M + 0.1, 4.8);
+  if (kit.website) pdf.text(kit.website, M + 0.1, 5.1);
   pdf.setFontSize(8).text(`1 / ${total}`, W - M, H - 0.3, { align: "right" });
 
   // ---- style pages ----
@@ -103,8 +123,9 @@ export async function buildLineSheet(styles: SheetStyle[], o: SheetOpts, onProgr
   let done = 0;
   for (let p = 0; p < pages; p++) {
     pdf.addPage("letter", "landscape");
-    pdf.setFont("helvetica", "bold").setFontSize(15).setTextColor(...INK);
+    pdf.setFont(pdfFont, "bold").setFontSize(15).setTextColor(...INK);
     pdf.text(brand ? `${brand} — ${season || "Styles"}` : season || "Styles", M, 0.62);
+    if (logo) { const lf = fit(logo.w, logo.h, 1.2, 0.4); pdf.addImage(logo.url, "PNG", W - M - lf.w, 0.3, lf.w, lf.h); }
     for (let i = 0; i < o.perPage; i++) {
       const s = styles[p * o.perPage + i];
       if (!s) break;

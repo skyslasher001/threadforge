@@ -33,3 +33,6 @@ Choices made where the build prompt was ambiguous or where this first slice devi
 | 27 | Line sheet prices appear only when the tech pack costing is complete | A partial cost would under-price the style on a buyer document |
 | 28 | Satin columns only for clean strokes 1.2-6 mm wide, at least 8 mm long, with up to 3 center-line branches | Rays, bars, rings and curves sew as satin that follows the stroke; tiny lettering stays fill, which is more legible from an auto-digitizer |
 | 29 | JEF files carry no explicit trim commands (pyembroidery's default) | Janome machines trim on long jumps; files are byte-identical to the reference |
+| 30 | One Brand Kit per user (browser storage + app-data `brandkit.json`), not per project | A brand is shared by every design; projects keep their own brand-line override |
+| 31 | Logos are recolored to one contrasting ink where they would disappear (dark logo on a dark cover) | Keeps covers, slides, social images and tags legible without asking for a second logo file |
+| 32 | Labels are rendered at 450 ppi and placed at actual size in the PDF | One renderer for previews and print; vector type would need font embedding (later) |

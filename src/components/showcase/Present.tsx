@@ -5,6 +5,7 @@ import type { Design, ProcessedGraphic } from "../../types";
 import { renderGarment, renderPair } from "../../lib/render";
 import { styleFacts } from "../../lib/linesheet";
 import { techpackOf } from "../../lib/production";
+import { brandKit, brandName, fontOf, logoOn } from "../../state/brand";
 import { isDark } from "../../data/fabrics";
 import { compositePhoto } from "./PhotoMockups";
 import { IcX } from "../Icons";
@@ -18,18 +19,22 @@ export interface Slide {
   grid?: { img: string; label: string; sw: [string, string] }[];
   facts?: [string, string][];
   bg: string;
+  logo?: string;
+  font?: string;
 }
 
 /** Everything worth showing about this design, in presentation order. */
 export async function buildSlides(d: Design, processed: Record<string, ProcessedGraphic>): Promise<Slide[]> {
   const pv = previewsOf(d, processed);
   const tp = techpackOf(d);
-  const brand = tp.brand || d.showcase?.brand || "";
+  const brand = brandName(d);
+  const kit = brandKit();
   const studio = isDark(d.bodyColor) ? "#E9E7E2" : "#1A1A1F";
   const url = (c: HTMLCanvasElement) => c.toDataURL("image/png");
   const slides: Slide[] = [];
   const front = url((await renderGarment(d, { view: "front", pxPerInch: 40, background: null, previews: pv })).canvas);
-  slides.push({ id: "title", kind: "title", title: d.name, sub: [brand, tp.season].filter(Boolean).join(" · "), img: front, bg: "#0E0E12" });
+  const titleBg = kit.colors[0]?.hex && kit.name ? kit.colors[0].hex : "#0E0E12";
+  slides.push({ id: "title", kind: "title", title: d.name, sub: [brand, tp.season].filter(Boolean).join(" · "), img: front, bg: titleBg, logo: (await logoOn(titleBg, kit)) ?? undefined, font: fontOf(kit.headingFont).css });
   slides.push({ id: "front", kind: "hero", title: "Front", img: front, bg: studio });
   slides.push({ id: "back", kind: "hero", title: "Back", img: url((await renderGarment(d, { view: "back", pxPerInch: 40, background: null, previews: pv })).canvas), bg: studio });
   if (d.colorways.length > 1) {
@@ -108,7 +113,10 @@ export function Present() {
         <div key={x.id} className={`slide ${x.kind}${k === i ? " on" : ""}`} aria-hidden={k !== i} style={{ color: isDark(x.bg) ? "#F4F4F6" : "#141418" }}>
           {x.kind === "title" && (
             <>
-              <div className="slide-copy"><div className="eyebrow">{x.sub || "New design"}</div><h1>{x.title}</h1></div>
+              <div className="slide-copy">
+                {x.logo && <img className="slide-logo" src={x.logo} alt="" />}
+                <div className="eyebrow">{x.sub || "New design"}</div><h1 style={{ fontFamily: x.font }}>{x.title}</h1>
+              </div>
               <img src={x.img} alt="" />
             </>
           )}

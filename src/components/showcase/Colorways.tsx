@@ -7,6 +7,7 @@ import { download, slug } from "../../lib/exporting";
 import { ColorChip, Seg } from "../Controls";
 import { IcDownload, IcX } from "../Icons";
 import { Busy, canvasToBlob, useAsync } from "./common";
+import { paletteToColorways } from "./BrandKit";
 
 const cache = new Map<string, string>();
 
@@ -49,6 +50,7 @@ export function ColorwayMatrix() {
         <div className="spacer" />
         <button className="btn sm" onClick={addCurrent}>Save current colors</button>
         <button className="btn sm" onClick={suggest} data-testid="suggest-colorways">Suggest 4 colorways</button>
+        <button className="btn sm" onClick={paletteToColorways} title="One colorway per Brand Kit color">From Brand Kit</button>
         <button className="btn sm primary" onClick={() => exportMatrix(useStore.getState().design, useStore.getState().processed, back)}><IcDownload size={13} /> Matrix PNG</button>
       </div>
       <div className={`cw-matrix${back ? " pair" : ""}`} data-testid="cw-matrix">

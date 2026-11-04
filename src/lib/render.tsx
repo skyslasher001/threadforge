@@ -10,6 +10,8 @@ import { GarmentView } from "../components/Garment";
 import { SvgFilters } from "./brushes";
 import { graphicHeight } from "./checks";
 import { garmentClip, paintView } from "./raster";
+import { fontOf, logoOn, type BrandKit, type FontId } from "../state/brand";
+import { loadImage } from "./imaging";
 
 export interface RenderOpts {
   view: View;
@@ -121,7 +123,7 @@ export const SOCIAL: SocialFormat[] = [
   { id: "product", name: "Store product image", w: 2000, h: 2000, note: "white background" },
 ];
 
-export interface SocialOpts { format: SocialFormat; background: string; caption: string; brand: string; showBack: boolean; dark: boolean }
+export interface SocialOpts { format: SocialFormat; background: string; caption: string; brand: string; showBack: boolean; dark: boolean; logo?: (Partial<BrandKit> & { logo: string | null; headingFont: FontId }) | null }
 
 /** Compose the garment (front, or front + back) on a branded background at the platform's size. */
 export async function socialImage(d: Design, o: SocialOpts, previews: Record<string, string>): Promise<HTMLCanvasElement> {
@@ -140,10 +142,18 @@ export async function socialImage(d: Design, o: SocialOpts, previews: Record<str
   }
   const art = o.showBack ? await renderPair(d, { pxPerInch: 40, background: null, previews }, 1) : (await renderGarment(d, { view: "front", pxPerInch: 40, background: null, previews })).canvas;
   const textSpace = o.caption || o.brand ? (o.format.id === "story" ? 380 : 220) : 0;
+  const logoSpace = o.logo?.logo && o.format.id !== "product" ? Math.round(h * (o.format.id === "story" ? 0.1 : 0.09)) : 0;
   const pad = o.format.id === "product" ? 0.06 : 0.08;
-  const s = Math.min((w * (1 - pad * 2)) / art.width, (h * (1 - pad * 2) - textSpace) / art.height);
+  const s = Math.min((w * (1 - pad * 2)) / art.width, (h * (1 - pad * 2) - textSpace - logoSpace) / art.height);
   const aw = art.width * s, ah = art.height * s;
-  const ay = (h - textSpace - ah) / 2 + (o.format.id === "story" ? 60 : 0);
+  const ay = logoSpace + (h - textSpace - logoSpace - ah) / 2 + (o.format.id === "story" ? 60 : 0);
+  const logoUrl = logoSpace && o.logo?.logo ? await logoOn(o.background, o.logo as BrandKit) : null;
+  if (logoUrl) {
+    const img = await loadImage(logoUrl);
+    const lh = logoSpace * 0.62, lw = Math.min(w * 0.4, (img.naturalWidth / img.naturalHeight) * lh);
+    const sc = Math.min(lw / img.naturalWidth, lh / img.naturalHeight);
+    ctx.drawImage(img, (w - img.naturalWidth * sc) / 2, h * 0.045, img.naturalWidth * sc, img.naturalHeight * sc);
+  }
   // soft floor shadow
   ctx.save();
   ctx.filter = "blur(24px)";
@@ -156,7 +166,8 @@ export async function socialImage(d: Design, o: SocialOpts, previews: Record<str
   const ink = o.dark ? "#F4F4F6" : "#141418";
   if (o.brand) {
     ctx.fillStyle = ink;
-    ctx.font = `800 ${Math.round(w * 0.028)}px Inter, "Segoe UI", system-ui, sans-serif`;
+    const hf = fontOf(o.logo?.headingFont ?? "inter");
+    ctx.font = `${hf.weight} ${Math.round(w * 0.028)}px ${hf.css}`;
     ctx.textAlign = "center";
     ctx.fillText(o.brand.toUpperCase().split("").join(" "), w / 2, h - textSpace + textSpace * 0.42);
   }

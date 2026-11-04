@@ -6,6 +6,7 @@ import { Viewer3DPanel, Viewer3DView } from "./Viewer3D";
 import { PhotoPanel, PhotoView } from "./PhotoMockups";
 import { LineSheetPanel, LineSheetView } from "./LineSheet";
 import { AiPanel, AiView } from "./AiRender";
+import { BrandPanel, BrandView } from "./BrandKit";
 
 interface Tool { id: ShowTab; label: string; view: () => ReactNode; panel: () => ReactNode }
 
@@ -16,6 +17,7 @@ export const SHOW_TOOLS: Tool[] = [
   { id: "ai", label: "On-model render", view: () => <AiView />, panel: () => <AiPanel /> },
   { id: "social", label: "Social", view: () => <SocialView />, panel: () => <SocialPanel /> },
   { id: "linesheet", label: "Line sheet", view: () => <LineSheetView />, panel: () => <LineSheetPanel /> },
+  { id: "brand", label: "Brand kit", view: () => <BrandView />, panel: () => <BrandPanel /> },
 ];
 
 const toolFor = (t: ShowTab) => SHOW_TOOLS.find((x) => x.id === t) ?? SHOW_TOOLS[0];
