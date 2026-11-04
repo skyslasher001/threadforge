@@ -55,6 +55,10 @@ jobs:
     name: Windows installer
     needs: test
     runs-on: windows-latest
+    # one installer/release job per branch at a time, so two quick pushes can't both publish the same version
+    concurrency:
+      group: windows-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
