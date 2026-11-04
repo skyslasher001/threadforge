@@ -5,7 +5,8 @@ import type {
 import { TEMPLATES } from "../data/measurements";
 import { readAppAutosave, writeAppAutosave } from "../lib/native";
 
-export type Mode = "design" | "print" | "measure" | "techpack";
+export type Mode = "design" | "print" | "measure" | "techpack" | "showcase";
+export type ShowTab = "colorways" | "3d" | "photo" | "social" | "linesheet" | "ai";
 export type SideTab = "props" | "layers" | "history";
 
 export interface Brush {
@@ -91,6 +92,8 @@ interface State {
   processed: Record<string, ProcessedGraphic>;
   toasts: Toast[];
   bench: { running: boolean; result: BenchResult | null };
+  showTab: ShowTab;
+  presenting: boolean;
 
   commit: (fn: (d: Design) => Design, label?: string) => void;
   live: (fn: (d: Design) => Design) => void;
@@ -149,6 +152,7 @@ export function newDesign(template: TemplateId = "tee"): Design {
     previewSize: "M",
     strokes: [],
     graphics: [],
+    showcase: { photos: [], renders: [], brand: "", caption: "" },
   };
 }
 
@@ -164,6 +168,7 @@ export function migrate(raw: Design): Design {
   const first = (v: View) => d.layers.find((l) => l.view === v)!.id;
   d.strokes = (d.strokes ?? []).map((s) => (s.layerId && d.layers.some((l) => l.id === s.layerId) ? s : { ...s, layerId: first(s.view) }));
   d.graphics = d.graphics ?? [];
+  d.showcase = { photos: [], renders: [], brand: "", caption: "", ...(d.showcase ?? {}) };
   return d;
 }
 
@@ -233,6 +238,8 @@ export const useStore = create<State>((set, get) => ({
   processed: {},
   toasts: [],
   bench: { running: false, result: null },
+  showTab: "colorways",
+  presenting: false,
   ...loadPrefs(),
 
   commit: (fn, label = "Edit") => {

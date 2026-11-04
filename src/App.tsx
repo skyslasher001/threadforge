@@ -13,6 +13,7 @@ import { checkForUpdates, isTauri, openFile as nativeOpen } from "./lib/native";
 import { runBenchmark } from "./lib/bench";
 import { LayersPanel, HistoryPanel } from "./components/SidePanels";
 import { TechPackPanel } from "./components/TechPackPanel";
+import { ShowcasePanel, ShowcaseView } from "./components/showcase/Showcase";
 import { buildTechPack } from "./lib/techpack";
 import { saveFile } from "./lib/native";
 import { Stage, paintAllViews } from "./components/Stage";
@@ -20,7 +21,7 @@ import { BrushPanel, GarmentPanel, GraphicPanel, GraphicsList, MeasurePanel, Pri
 import { CommandPalette, type Command } from "./components/Palette";
 import {
   IcBrush, IcCommand, IcDownload, IcEraser, IcFilm, IcFit, IcFocus, IcFolder, IcHand, IcImage, IcNeedle, IcPalette, IcPrint,
-  IcRedo, IcRuler, IcSave, IcSelect, IcShirt, IcSymmetry, IcTable, IcUndo, IcZones, IcLayers, IcChevron, IcX,
+  IcRedo, IcRuler, IcSave, IcSelect, IcShirt, IcSymmetry, IcTable, IcUndo, IcZones, IcLayers, IcChevron, IcX, IcSparkle,
 } from "./components/Icons";
 
 const TOOLS: { id: Tool; label: string; key: string; icon: typeof IcSelect }[] = [
@@ -164,6 +165,7 @@ export default function App() {
       { id: "mode-print", label: "Go to Print Prep", group: "Views", keys: "2", run: () => setMode("print") },
       { id: "mode-measure", label: "Go to Measurements", group: "Views", keys: "3", run: () => setMode("measure") },
       { id: "mode-techpack", label: "Go to Tech Pack", group: "Views", keys: "4", run: () => setMode("techpack") },
+      { id: "mode-showcase", label: "Go to Showcase", group: "Views", keys: "5", run: () => setMode("showcase") },
       { id: "export-techpack", label: "Export tech pack PDF", group: "Export", run: exportTechPack },
       { id: "fit", label: "Zoom to fit", group: "Views", keys: "Shift+1", run: () => s.set({ fitRequest: s.fitRequest + 1 }) },
       { id: "focus", label: "Toggle focus mode", group: "Views", keys: "Tab", run: () => s.set({ focus: !s.focus }) },
@@ -249,6 +251,7 @@ export default function App() {
         "2": () => setMode("print"),
         "3": () => setMode("measure"),
         "4": () => setMode("techpack"),
+        "5": () => setMode("showcase"),
         "[": () => st.setBrush({ size: Math.max(0.03, +(st.brush.size / 1.25).toFixed(3)) }),
         "]": () => st.setBrush({ size: Math.min(3, +(st.brush.size * 1.25).toFixed(3)) }),
       };
@@ -281,6 +284,7 @@ export default function App() {
     if (s.sideTab === "history") return <HistoryPanel />;
     if (s.mode === "measure") return <MeasurePanel />;
     if (s.mode === "techpack") return <TechPackPanel onExport={exportTechPack} busy={tpBusy} />;
+    if (s.mode === "showcase") return <ShowcasePanel />;
     if (s.mode === "print") return <PrintPanel />;
     return (
       <>
@@ -307,7 +311,7 @@ export default function App() {
         <div className="divider" />
         <input className="project-name" value={s.design.name} onChange={(e) => s.live((d) => ({ ...d, name: e.target.value }))} onFocus={() => s.checkpoint()} aria-label="Project name" />
         <div className="tabs" role="tablist">
-          {([["design", "Design", IcShirt], ["print", "Print Prep", IcPrint], ["measure", "Measurements", IcRuler], ["techpack", "Tech Pack", IcTable]] as const).map(([m, label, Icon]) => (
+          {([["design", "Design", IcShirt], ["print", "Print Prep", IcPrint], ["measure", "Measurements", IcRuler], ["techpack", "Tech Pack", IcTable], ["showcase", "Showcase", IcSparkle]] as const).map(([m, label, Icon]) => (
             <button key={m} className={`tab${s.mode === m ? " on" : ""}`} onClick={() => setMode(m)} role="tab" aria-selected={s.mode === m}>
               <Icon size={14} /> {label}
             </button>
@@ -331,7 +335,7 @@ export default function App() {
             </div>
           )}
         </div>
-        <button className="btn ghost sm" onClick={() => s.set({ palette: true })}><IcCommand size={13} /> Search <span className="kbd">Ctrl K</span></button>
+        <button className="btn ghost sm" onClick={() => s.set({ palette: true })}><IcCommand size={13} /> Search <span className="kbd hide-narrow">Ctrl K</span></button>
         <button className="btn icon ghost" onClick={s.undo} disabled={!s.past.length} title="Undo (Ctrl+Z)"><IcUndo /></button>
         <button className="btn icon ghost" onClick={s.redo} disabled={!s.future.length} title="Redo (Ctrl+Shift+Z)"><IcRedo /></button>
         <div className="seg" title="Units">
@@ -391,13 +395,14 @@ export default function App() {
       </nav>
 
       <Stage svgRef={svgRef} />
+      {s.mode === "showcase" && <ShowcaseView />}
 
       {/* ---------------- inspector ---------------- */}
       <aside className="side" style={{ width: (s.mode === "measure" || s.mode === "techpack") && s.sideTab === "props" ? Math.max(s.sideWidth, 720) : s.sideWidth }}>
         <div className={`side-resize${resizing.current ? " active" : ""}`} title="Drag to resize"
           onPointerDown={(e) => { e.preventDefault(); resizing.current = { x: e.clientX, w: s.sideWidth }; }} />
         <div className="side-tabs" role="tablist">
-          {([["props", s.mode === "measure" ? "Spec" : s.mode === "print" ? "Production" : s.mode === "techpack" ? "Tech pack" : "Properties"], ["layers", "Layers"], ["history", "History"]] as const).map(([t, label]) => (
+          {([["props", s.mode === "measure" ? "Spec" : s.mode === "print" ? "Production" : s.mode === "techpack" ? "Tech pack" : s.mode === "showcase" ? "Showcase" : "Properties"], ["layers", "Layers"], ["history", "History"]] as const).map(([t, label]) => (
             <button key={t} role="tab" aria-selected={s.sideTab === t} className={`side-tab${s.sideTab === t ? " on" : ""}`} onClick={() => tab(t)}>
               {t === "layers" && <IcLayers size={13} />}{label}
               {t === "layers" && <span className="count">{s.design.layers.filter((l) => l.view === s.activeView).length}</span>}

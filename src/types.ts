@@ -140,9 +140,50 @@ export interface TechPack {
   revisions: Revision[];
 }
 
+/** A photo of a blank garment with the print area marked by four corners. */
+export interface PhotoMockup {
+  id: string;
+  name: string;
+  photo: string; // data URL (downscaled on import)
+  w: number;
+  h: number;
+  quad: [number, number][]; // TL, TR, BR, BL in photo pixels
+  view: View; // which side's artwork goes on it
+  zone: string; // print zone id the quad represents
+  shading: number; // 0..1 how much fabric light/shadow shows through the print
+  opacity: number;
+}
+
+export type JobStatus = "estimating" | "queued" | "in_progress" | "completed" | "failed" | "nsfw" | "canceled";
+
+/** One Higgsfield generation (on-model still or motion clip), kept with the project. */
+export interface AiRender {
+  id: string;
+  kind: "image" | "video";
+  model: string;
+  prompt: string;
+  status: JobStatus;
+  createdAt: number;
+  requestId?: string;
+  usd?: string;
+  src?: string; // still: data URL; video: first frame / poster
+  videoKey?: string; // video bytes live in this computer's IndexedDB under this key
+  parentId?: string; // the still a clip was animated from
+  error?: string;
+  mock?: boolean;
+}
+
+export interface Showcase {
+  photos: PhotoMockup[];
+  renders: AiRender[];
+  brand: string;
+  caption: string;
+}
+
 export interface Design {
   name: string;
   techpack?: TechPack;
+  showcase?: Showcase;
   template: TemplateId;
   parts: Parts;
   layers: Layer[];
