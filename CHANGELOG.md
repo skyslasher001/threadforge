@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.0 — Phase 4 (Showcase)
+
+**Showcase mode (key 5)**
+- Colorway matrix: every colorway rendered with the real fabric, artwork and drawing; click to apply, "Suggest 4 colorways", labelled matrix PNG.
+- 3D viewer: the flat front and back inflated into a lit 3D garment that updates as you edit; orbit, camera presets, three light setups, backdrops, 2048 px snapshot.
+- Turntable video: one seamless 360° loop, square / vertical / wide, encoded frame by frame (H.264 MP4, WebM fallback).
+- Photo mockups: drop in a photo of a blank garment, drag four corners onto the print area; the artwork is perspective-warped and lit by the photo's own folds and light. Full-size PNG export.
+- On-model renders with Higgsfield: prompt builder chips, front/back flat or photo mockup as reference, price shown before every job, job queue with cancel, results saved with the project; animate any still into a 5 or 10 s clip. API key kept in Windows Credential Manager.
+- Social exports: Instagram 4:5, square, 9:16 story/reel, 2000 px white store image, with brand line and caption.
+- Line sheet PDF: cover, 2/4/6 styles per page (add other .tforge files), fabric, sizes, colorways, wholesale + MSRP once costing is complete, buyer order form.
+- Present: full-screen slideshow of the design (title, front, back, colorways, photo mockups, renders, details).
+
+**Other**
+- jsPDF 4.2.1 (security fixes).
+- Top tabs no longer wrap on narrower windows.
+
+**Testing**
+- 24 new headless UI checks for Showcase, including Gate 4 (flat → on-model render + turntable from a cold start), unit tests for the 3D inflate and the photo warp math, and a Rust bridge test against a mock Higgsfield API in CI.
+
 ## 0.3.0 — Phase 3 (production) + verification pass
 
 **Production**

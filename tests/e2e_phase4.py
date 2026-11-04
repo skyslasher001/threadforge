@@ -313,6 +313,33 @@ async def main():
                 info += f", {w}x{h}, {n} frames"
             return info
         await check("turntable records one full turn to video", turntable)
+
+        # ---------------- Gate 4: flat -> on-model render + turntable, from a cold start ----------------
+        ctx2 = await b.new_context(viewport={"width": 1480, "height": 920}, accept_downloads=True)
+        g = await ctx2.new_page()
+        async def gate4():
+            t = time.time()
+            await g.goto("file://" + HTML); await g.wait_for_timeout(500)
+            await g.click(".welcome-card >> text=Pullover Hoodie"); await g.click("text=Start with sample artwork")
+            await g.wait_for_timeout(1500)
+            await g.keyboard.press("5"); await g.click(".sc-tab:text-is('On-model render')")
+            await g.click("[data-testid=ai-price]"); await g.wait_for_selector("[data-testid=ai-generate]", timeout=30000)
+            await g.click("[data-testid=ai-generate]")
+            await g.wait_for_selector("[data-testid=ai-card][data-status=completed] img", timeout=60000)
+            t_render = time.time() - t
+            # GitHub runners render 3D on 2 CPU cores with no GPU: a 2 s turn there, 4 s elsewhere
+            secs = 2 if os.environ.get("CI") else 4
+            await g.evaluate(f"window.__threadforge.show.getState().set({{ spin: false, recSeconds: {secs} }})")
+            await g.click(".sc-tab:text-is('3D')")
+            await g.wait_for_function("parseInt(document.querySelector('[data-testid=v3d-stats]').textContent.replace(/,/g, '')) > 1000", timeout=60000)
+            async with g.expect_download(timeout=240000) as d:
+                await g.click("text=Record turntable")
+            path = f"{OUT}/gate4-turntable"; await (await d.value).save_as(path)
+            total = time.time() - t
+            if total > 180: raise AssertionError(f"{total:.0f} s")
+            return f"{total:.0f} s total (render ready at {t_render:.0f} s; {secs} s turntable at 1080 on software GL), budget 180 s"
+        await check("GATE 4: flat to on-model render + turntable in under 3 minutes", gate4)
+        await ctx2.close()
         print(f"\nShowcase flow took {time.time() - t0:.1f} s")
         await b.close()
 

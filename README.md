@@ -21,8 +21,8 @@ The first build downloads Rust crates and takes 5–10 minutes; later builds are
 
 Your installers land in:
 
-- `src-tauri\target\release\bundle\nsis\THREADFORGE_0.3.0_x64-setup.exe`  ← run this one
-- `src-tauri\target\release\bundle\msi\THREADFORGE_0.3.0_x64_en-US.msi`
+- `src-tauri\target\release\bundle\nsis\THREADFORGE_0.4.0_x64-setup.exe`  ← run this one
+- `src-tauri\target\release\bundle\msi\THREADFORGE_0.4.0_x64_en-US.msi`
 - the bare app: `src-tauri\target\release\threadforge.exe`
 
 ### Day-to-day development
@@ -36,7 +36,21 @@ npm run dev           # same UI in a browser at http://localhost:1420
 
 Every push to `main` runs the tests and builds the Windows installer on GitHub's Windows machines
 (`.github/workflows/build.yml`). Download it from the run's **Artifacts** (`THREADFORGE-windows`).
-Push a tag like `v0.3.0` and the installers are attached to a GitHub Release.
+When a push carries a new version number, the build also publishes GitHub Release `vX.Y.Z`
+with the `.exe` and `.msi` attached: see [Releases](https://github.com/skyslasher001/threadforge/releases).
+
+## Higgsfield on-model renders (optional)
+
+1. In your Higgsfield account, create an API key. You get a **key ID** and a **secret**.
+2. In THREADFORGE: Showcase (5) → **On-model render** → paste both in the side panel → Save key.
+   The key goes to Windows Credential Manager (entry "THREADFORGE Higgsfield"), never into project files.
+3. Pick a reference (front flat, back flat or a photo mockup), tap the chips, press **Check price**.
+   The Generate button shows the price; nothing is charged until you press it.
+4. Open a finished still to **Animate** it into a 5 or 10 second clip (also priced first).
+
+Stills are saved inside the `.tforge` project. Clips are several MB, so they stay on this computer;
+use **Save clip** to keep a copy. In the browser preview (`npm run dev`) the tab runs a labelled demo
+with placeholder results and no API calls.
 
 ## Enable auto-update (optional)
 
@@ -57,7 +71,7 @@ npm run build:updater
 4. Upload the installer, its `.sig` file and a `latest.json` to your endpoint.
    In the app: Workspaces menu → **Check for updates**.
 
-## What's in this build (v0.3 — Phases 1, 2 and 3)
+## What's in this build (v0.4 — Phases 1 to 4)
 
 | Area | What works |
 | --- | --- |
@@ -74,6 +88,7 @@ npm run build:updater
 | Screen print | Color separation, underbase, ink system (plastisol, water-based, discharge, puff, metallic, glitter), suggested print order with mesh counts, **film positives PDF at actual size** (one page per screen, registration marks, 1 in check bar) |
 | Embroidery | **Auto-digitizer**: region cleanup, tatami fill (0.4 mm) with underlay and pull compensation, shape sections to minimize trims, lock stitches; real stitch preview and stitch-out player; hoop fit; **DST, PES and EXP files** byte-identical to pyembroidery's encoders |
 | Tech pack | Tech Pack mode: style info, BOM editor with fabric yardage estimate, costing sheet (your rates, margin, retail), construction/care/labels/packaging notes, revision log; **10-page PDF** (overview, flats, measurement diagram, graded spec, BOM, colorways, artwork, construction, costing, revisions) |
+| Showcase | **Colorway matrix** (live renders, suggestions, matrix PNG); **3D viewer** with lights, backdrops and snapshot; **turntable video** (seamless loop, MP4/WebM, square / vertical / wide); **photo mockups** (four-corner perspective warp lit by the photo's folds); **Higgsfield on-model renders** and motion clips with price-first jobs; **social exports** (4:5, 1:1, 9:16, 2000 px store image); **line sheet PDF** with order form; full-screen **Present** |
 | Checks | DPI meter, fabric/method compatibility, screen count, hoop size, stitch density, with one-click fixes |
 | Files | Autosave + crash recovery, Save/Open `.tforge`, mockup PNG (front + back), films PNG, spec CSV, labeled undo/redo (150 steps) |
 
@@ -92,7 +107,8 @@ npm run build:updater
 | [ / ] | Brush size | Shift+1 | Zoom to fit |
 | L | Layers tab | Y | History tab |
 | Ctrl+\\ | Hide / show panels | Hold pen still | QuickShape snap |
-| 1 / 2 / 3 / 4 | Design / Print Prep / Measurements / Tech Pack | Tab | Focus mode |
+| 1 / 2 / 3 / 4 / 5 | Design / Print Prep / Measurements / Tech Pack / Showcase | Tab | Focus mode |
+| ← → Space | Next / previous slide (Present) | Esc | Exit Present |
 
 ## Gate results (measured in this build)
 
@@ -103,15 +119,17 @@ npm run build:updater
 | Gate 2: graded, fabric-assigned hoodie in under 5 min | 12 actions: hoodie → color → French terry → boxy fit → chest 24 1/2 → grade 2 1/2 → preview L → export spec CSV |
 
 | Gate 3: a shop can produce from the files with no rework | DST/PES/EXP byte-identical to pyembroidery and read back with the right stitch count, colors and size; film PDF pages measure exactly art size + margins at 300 DPI; tech pack carries graded spec, BOM, placement and print/thread sequences. A real test-sew and film output at a shop is still the final check. |
+| Gate 4: one design flat → on-model render and turntable in under 3 min | Measured from a cold start on a CPU-only test machine: 130 s total, with the on-model still ready at 29 s and a 4-second 1080 × 1080 turntable encoded on software rendering (a GPU makes the turntable step take a few seconds). The render step used the demo backend; with a live key add Higgsfield's queue and render time. |
 
 ## Tests
 
 ```bash
-npm test          # typecheck, 6,048 garment variants, embroidery files vs pyembroidery
-npm run test:e2e  # 143 UI checks in headless Chrome (pip install playwright pyembroidery pypdf)
+npm test          # typecheck, 6,048 garment variants, 3D inflate + photo warp math, embroidery files vs pyembroidery
+npm run test:e2e  # 176 UI checks in headless Chrome (pip install playwright pyembroidery "pypdf[image]")
+tests/hf_bridge.sh  # Rust Higgsfield bridge against a mock API (needs Rust)
 ```
 
-## Not built yet (Phases 4–5)
+## Not built yet (Phase 5)
 
-Higgsfield on-model renders, 3D viewer, photo mockups, line sheets, Brand Kit, macros, hot folder.
+Brand Kit, macros, hot folder, cloth-simulated 3D drape from real pattern pieces,
 JEF/VP3 embroidery formats and satin-column digitizing. See `DECISIONS.md` and `CHANGELOG.md`.
