@@ -68,3 +68,19 @@ if (failures.length) {
   if (profile(0, 4, 5) !== 0 || Math.abs(profile(5, 4, 5) - 4) > 1e-9) throw new Error("profile ends");
   console.log(`inflate: ${sh.index.length / 3} triangles, depth ${maxZ.toFixed(2)} in, edge snapped`);
 }
+
+// ---------- photo warp: homography maps the print rectangle exactly onto the four corners ----------
+{
+  const { homography, apply, invert, convex } = await import("../src/lib/warp");
+  const src: [number, number][] = [[0, 0], [400, 0], [400, 300], [0, 300]];
+  const dst: [number, number][] = [[120, 80], [530, 140], [500, 470], [90, 420]];
+  const h = homography(src, dst);
+  for (let i = 0; i < 4; i++) {
+    const [x, y] = apply(h, src[i][0], src[i][1]);
+    if (Math.hypot(x - dst[i][0], y - dst[i][1]) > 1e-6) throw new Error(`corner ${i} maps to ${x},${y}`);
+  }
+  const [bx, by] = apply(invert(h), ...apply(h, 173, 211));
+  if (Math.hypot(bx - 173, by - 211) > 1e-6) throw new Error("inverse homography");
+  if (!convex(dst) || convex([[0, 0], [10, 10], [10, 0], [0, 10]])) throw new Error("convexity check");
+  console.log("warp: homography corners exact, inverse round-trips, bow-tie quads rejected");
+}

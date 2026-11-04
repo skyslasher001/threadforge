@@ -3,12 +3,14 @@ import { useStore, type ShowTab } from "../../state/store";
 import { ColorwayMatrix, ColorwayPanel } from "./Colorways";
 import { SocialPanel, SocialView } from "./Social";
 import { Viewer3DPanel, Viewer3DView } from "./Viewer3D";
+import { PhotoPanel, PhotoView } from "./PhotoMockups";
 
 interface Tool { id: ShowTab; label: string; view: () => ReactNode; panel: () => ReactNode }
 
 export const SHOW_TOOLS: Tool[] = [
   { id: "colorways", label: "Colorways", view: () => <ColorwayMatrix />, panel: () => <ColorwayPanel /> },
   { id: "3d", label: "3D", view: () => <Viewer3DView />, panel: () => <Viewer3DPanel /> },
+  { id: "photo", label: "Photo mockups", view: () => <PhotoView />, panel: () => <PhotoPanel /> },
   { id: "social", label: "Social", view: () => <SocialView />, panel: () => <SocialPanel /> },
 ];
 

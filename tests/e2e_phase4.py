@@ -113,6 +113,64 @@ async def main():
 
         await pg.screenshot(path=f"{OUT}/p4-social.png")
 
+
+        # ---------------- photo mockups ----------------
+        await tab("Photo mockups")
+        async def photo_sample():
+            await pg.click("[data-testid=sample-photo]")
+            await pg.wait_for_selector("[data-testid=photo-result]", timeout=20000)
+            await pg.wait_for_timeout(600)
+            p = await state("s.design.showcase.photos[0]")
+            return f"{p['w']}x{p['h']} photo, print area {p['zone']}"
+        await check("sample photo with print area marked", photo_sample)
+
+        async def photo_warp():
+            # the artwork changes pixels inside the quad and leaves the rest of the photo alone
+            res = await pg.evaluate("""(async () => {
+              const s = window.__threadforge.store.getState(); const p = s.design.showcase.photos[0];
+              const load = (u) => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = u; });
+              const a = await load(p.photo), b = await load(document.querySelector('[data-testid=photo-result]').src);
+              const px = (img, x, y) => { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+                const g = c.getContext('2d'); g.drawImage(img, 0, 0); return g.getImageData(Math.round(x * img.naturalWidth / p.w), Math.round(y * img.naturalHeight / p.h), 1, 1).data; };
+              const q = p.quad; let changed = 0, same = 0;
+              const g = s.design.graphics[0];
+              // sample a grid inside the quad and the photo corners
+              for (let i = 1; i < 10; i++) for (let j = 1; j < 10; j++) {
+                const u = i / 10, v = j / 10;
+                const x = (q[0][0] * (1 - u) + q[1][0] * u) * (1 - v) + (q[3][0] * (1 - u) + q[2][0] * u) * v;
+                const y = (q[0][1] * (1 - u) + q[1][1] * u) * (1 - v) + (q[3][1] * (1 - u) + q[2][1] * u) * v;
+                const d1 = px(a, x, y), d2 = px(b, x, y);
+                if (Math.abs(d1[0] - d2[0]) + Math.abs(d1[1] - d2[1]) + Math.abs(d1[2] - d2[2]) > 30) changed++;
+              }
+              for (const [x, y] of [[5, 5], [p.w - 5, 5], [5, p.h - 5], [p.w - 5, p.h - 5]]) {
+                const d1 = px(a, x, y), d2 = px(b, x, y);
+                if (Math.abs(d1[0] - d2[0]) + Math.abs(d1[1] - d2[1]) + Math.abs(d1[2] - d2[2]) < 30) same++;
+              }
+              return [changed, same];
+            })()""")
+            if res[0] < 1 or res[1] != 4: raise AssertionError(f"changed {res[0]}, untouched corners {res[1]}/4")
+            return f"{res[0]} of 81 samples in the print area carry artwork, photo outside untouched"
+        await check("artwork warped into the print area only", photo_warp)
+
+        async def photo_drag():
+            before = await state("s.design.showcase.photos[0].quad[2]")
+            h = pg.locator(".photo-handle[data-corner='2']"); bb = await h.bounding_box()
+            await pg.mouse.move(bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2); await pg.mouse.down()
+            await pg.mouse.move(bb["x"] + 40, bb["y"] + 30, steps=6); await pg.mouse.up(); await pg.wait_for_timeout(500)
+            after = await state("s.design.showcase.photos[0].quad[2]")
+            await pg.keyboard.press("Control+z"); await pg.wait_for_timeout(200)
+            undone = await state("s.design.showcase.photos[0].quad[2]")
+            if not (after[0] > before[0] + 5 and abs(undone[0] - before[0]) < 0.01): raise AssertionError(f"{before} -> {after} -> undo {undone}")
+            return f"corner moved {after[0]-before[0]:.0f}, {after[1]-before[1]:.0f} px; undo restores"
+        await check("drag a corner, undo restores it", photo_drag)
+
+        async def photo_export():
+            path = await download(lambda: pg.click(".sc-toolbar >> text=Export PNG"), "photo.png")
+            p = await state("s.design.showcase.photos[0]")
+            return f"{Image.open(path).size}" if Image.open(path).size == (p["w"], p["h"]) else False
+        await check("photo mockup exports at full photo size", photo_export)
+        await pg.screenshot(path=f"{OUT}/p4-photo.png")
+
         # ---------------- 3D ----------------
         await tab("3D")
         async def three_d():

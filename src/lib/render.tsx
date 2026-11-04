@@ -168,3 +168,46 @@ export async function socialImage(d: Design, o: SocialOpts, previews: Record<str
   }
   return c;
 }
+
+// ---------------- artwork only (for photo mockups) ----------------
+
+/** Just the decoration (artwork + drawing) inside a window of the garment, on transparent. */
+export async function renderArtwork(d: Design, view: View, box: { x0: number; y0: number; x1: number; y1: number }, pxPerInch: number, previews: Record<string, string>): Promise<HTMLCanvasElement> {
+  const w = box.x1 - box.x0, h = box.y1 - box.y0;
+  const W = Math.max(1, Math.round(w * pxPerInch)), H = Math.max(1, Math.round(h * pxPerInch));
+  const m = gradedSpec(d.base, d.grade, d.previewSize);
+  const geom = buildGarment(d.template, view, m, d.parts);
+  const graphics = d.graphics.filter((g) => g.view === view && g.visible);
+  const svg = renderToStaticMarkup(
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={`${box.x0} ${box.y0} ${w} ${h}`} width={W} height={H}>
+      <SvgFilters />
+      <defs><clipPath id="art-clip"><path d={geom.body} />{geom.hood && <path d={geom.hood} />}</clipPath></defs>
+      <g clipPath="url(#art-clip)">{graphics.map((g) => graphicEl(g, g.method === "dtg" ? g.src : previews[g.id] ?? g.src))}</g>
+    </svg>,
+  );
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error("Artwork render failed"));
+      i.src = url;
+    });
+    const c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const ctx = c.getContext("2d")!;
+    ctx.drawImage(img, 0, 0, W, H);
+    const layer = document.createElement("canvas");
+    layer.width = W; layer.height = H;
+    paintView(layer.getContext("2d")!, {
+      layers: d.layers.filter((l) => l.view === view),
+      strokes: d.strokes.filter((s) => s.view === view),
+      transform: new DOMMatrix([pxPerInch, 0, 0, pxPerInch, -box.x0 * pxPerInch, -box.y0 * pxPerInch]),
+      clip: garmentClip(geom.body, geom.hood),
+    });
+    ctx.drawImage(layer, 0, 0);
+    return c;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}

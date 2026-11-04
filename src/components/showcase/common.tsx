@@ -42,3 +42,17 @@ export const fitBox = (w: number, h: number, W: number, H: number) => {
   const s = Math.min(W / w, H / h);
   return { w: w * s, h: h * s, s };
 };
+
+/** Size of an element (ResizeObserver). */
+export function useSize<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, size] as const;
+}
