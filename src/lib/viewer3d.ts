@@ -118,6 +118,7 @@ export async function createViewer(host: HTMLElement): Promise<Viewer> {
     rim.color.setHex(L.rim[0]); rim.intensity = L.rim[1]; rim.position.set(L.rim[2], L.rim[3], L.rim[4]);
     rim2.color.setHex(L.rim2[0]); rim2.intensity = L.rim2[1]; rim2.position.set(L.rim2[2], L.rim2[3], L.rim2[4]);
     floorMat.opacity = L.floor;
+    dirty = true;
   };
 
   const texture = (src: HTMLCanvasElement) => {
@@ -201,6 +202,7 @@ export async function createViewer(host: HTMLElement): Promise<Viewer> {
     };
     meshes = [build(1, t.front), build(-1, t.back)];
     garment.add(...meshes);
+    dirty = true;
     triangles = shell.index.length / 3 * 2;
     const floorY = -(maxY - cy) - 1.2;
     floor.position.y = floorY;
@@ -214,13 +216,16 @@ export async function createViewer(host: HTMLElement): Promise<Viewer> {
   let last = performance.now();
   let frames = 0, fpsT = last, fps = 0;
   let rec = false; // true while the recorder drives frames
+  let dirty = true;
   const loop = () => {
     raf = requestAnimationFrame(loop);
     const now = performance.now();
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (rec) return; // the recorder drives frames itself
-    controls.update(dt);
+    // render on demand: only while the camera moves, spins or something changed
+    if (!controls.update(dt) && !dirty) return;
+    dirty = false;
     renderer.render(scene, camera);
     frames++;
     if (now - fpsT > 1000) { fps = Math.round((frames * 1000) / (now - fpsT)); frames = 0; fpsT = now; }
@@ -232,6 +237,7 @@ export async function createViewer(host: HTMLElement): Promise<Viewer> {
     renderer.setSize(Math.max(1, r.width), Math.max(1, r.height));
     camera.aspect = Math.max(1, r.width) / Math.max(1, r.height);
     camera.updateProjectionMatrix();
+    dirty = true;
   };
   const ro = new ResizeObserver(size);
   ro.observe(host);
@@ -245,13 +251,14 @@ export async function createViewer(host: HTMLElement): Promise<Viewer> {
     garment.rotation.y = 0;
     camera.position.set(Math.sin(a) * d, controls.target.y + 2, Math.cos(a) * d);
     camera.lookAt(controls.target);
+    dirty = true;
   };
 
   return {
     setGarment,
     setLight,
-    setBackdrop: (hex) => { (scene.background as T.Color).set(hex); },
-    setSpin: (on, s) => { controls.autoRotate = on; spinSpeed = s; controls.autoRotateSpeed = 6 * spinSpeed; },
+    setBackdrop: (hex) => { (scene.background as T.Color).set(hex); dirty = true; },
+    setSpin: (on, s) => { controls.autoRotate = on; spinSpeed = s; controls.autoRotateSpeed = 6 * spinSpeed; dirty = true; },
     look,
     snapshot: async (px) => {
       const prev = renderer.getPixelRatio();

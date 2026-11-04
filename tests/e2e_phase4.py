@@ -32,7 +32,9 @@ async def main():
                 if len(errors) > n: raise AssertionError("console: " + " | ".join(errors[n:])[:300])
                 results.append((name, True, r if isinstance(r, str) else ""))
             except Exception as e:
-                results.append((name, False, str(e)[:300])); await pg.screenshot(path=f"{OUT}/p4-fail-{len(results)}.png")
+                results.append((name, False, str(e)[:300]))
+                try: await pg.screenshot(path=f"{OUT}/p4-fail-{len(results)}.png", timeout=90000)
+                except Exception: pass
         async def download(click, name, timeout=60000):
             async with pg.expect_download(timeout=timeout) as d:
                 await click()
@@ -77,7 +79,7 @@ async def main():
             path = await download(lambda: pg.click("text=Matrix PNG"), "matrix.png")
             im = Image.open(path); return f"{im.size[0]}x{im.size[1]}"
         await check("matrix PNG export", matrix_png)
-        await pg.screenshot(path=f"{OUT}/p4-matrix.png")
+        await pg.screenshot(path=f"{OUT}/p4-matrix.png", timeout=90000)
 
         # ---------------- social ----------------
         await tab("Social")
@@ -111,7 +113,7 @@ async def main():
             return im.getpixel((4, 4)) == (255, 255, 255) and im.getpixel((1000, 1000)) != (255, 255, 255)
         await check("store image: pure white background, garment centered", product_white)
 
-        await pg.screenshot(path=f"{OUT}/p4-social.png")
+        await pg.screenshot(path=f"{OUT}/p4-social.png", timeout=90000)
 
 
         # ---------------- photo mockups ----------------
@@ -169,14 +171,16 @@ async def main():
             p = await state("s.design.showcase.photos[0]")
             return f"{Image.open(path).size}" if Image.open(path).size == (p["w"], p["h"]) else False
         await check("photo mockup exports at full photo size", photo_export)
-        await pg.screenshot(path=f"{OUT}/p4-photo.png")
+        await pg.screenshot(path=f"{OUT}/p4-photo.png", timeout=90000)
 
         # ---------------- 3D ----------------
+        # CI has no GPU (software GL): keep the viewer still so it only renders on change
+        await pg.evaluate("window.__threadforge.show.getState().set({ spin: false })")
         await tab("3D")
         async def three_d():
             await pg.wait_for_function("(() => { const t = document.querySelector('[data-testid=v3d-stats]'); return t && parseInt(t.textContent.replace(/,/g, '')) > 1000; })()", timeout=30000)
             await pg.wait_for_timeout(800)
-            path = f"{OUT}/p4-3d.png"; await pg.locator("[data-testid=v3d]").screenshot(path=path)
+            path = f"{OUT}/p4-3d.png"; await pg.locator("[data-testid=v3d]").screenshot(path=path, timeout=90000)
             im = Image.open(path).convert("L"); w, h = im.size
             px = [im.getpixel((x, y)) for x in range(0, w, 7) for y in range(0, h, 7)]
             mean = sum(px) / len(px); var = sum((v - mean) ** 2 for v in px) / len(px)
@@ -186,7 +190,7 @@ async def main():
 
         async def three_back():
             await pg.click(".sc-toolbar button:text-is('Back')"); await pg.wait_for_timeout(500)
-            await pg.locator("[data-testid=v3d]").screenshot(path=f"{OUT}/p4-3d-back.png")
+            await pg.locator("[data-testid=v3d]").screenshot(path=f"{OUT}/p4-3d-back.png", timeout=90000)
             return await pg.evaluate("window.__threadforge.show.getState().spin") is False
         await check("camera presets stop the spin and turn to the back", three_back)
 
