@@ -6,6 +6,7 @@ Usage: python3 tests/e2e_phase4.py <dist-single/index.html> <out-dir> [chrome]
 import asyncio, os, shutil, subprocess, sys, time
 from playwright.async_api import async_playwright
 from PIL import Image
+from pypdf import PdfReader
 
 HTML, OUT = sys.argv[1], sys.argv[2]
 CHROME = sys.argv[3] if len(sys.argv) > 3 else None
@@ -172,6 +173,52 @@ async def main():
             return f"{Image.open(path).size}" if Image.open(path).size == (p["w"], p["h"]) else False
         await check("photo mockup exports at full photo size", photo_export)
         await pg.screenshot(path=f"{OUT}/p4-photo.png", timeout=90000)
+
+
+        # ---------------- line sheet ----------------
+        await tab("Line sheet")
+        async def sheet_preview():
+            await pg.wait_for_selector("[data-testid=sheet-page] img", timeout=20000)
+            return f"{await pg.locator('[data-testid=sheet-page]').count()} style page(s)"
+        await check("line sheet preview", sheet_preview)
+
+        async def sheet_add_style():
+            # save this project, rename it, then add the saved file as a second style
+            proj = await download(lambda: pg.keyboard.press("Control+s"), "style-a.tforge")
+            import json
+            data = json.load(open(proj)); dd = data.get("design", data); dd["name"] = "Second style"; dd["template"] = "tee"
+            path2 = f"{OUT}/style-b.tforge"; json.dump(data, open(path2, "w"))
+            async with pg.expect_file_chooser() as fc:
+                await pg.click("text=Add style file")
+            await (await fc.value).set_files(path2)
+            await pg.wait_for_function("document.querySelectorAll('[data-testid=sheet-page] .sheet-card').length === 2", timeout=30000)
+            return "2 styles on the sheet"
+        await check("add a second style from a project file", sheet_add_style)
+
+        async def sheet_pdf():
+            path = await download(lambda: pg.click("text=Line sheet PDF"), "linesheet.pdf")
+            r = PdfReader(path); txt = "\n".join(p.extract_text() or "" for p in r.pages)
+            name = await state("s.design.name")
+            ok = len(r.pages) == 3 and name in txt and "Second style" in txt and "Order form" in txt and "3XL" in txt
+            if not ok: raise AssertionError(f"{len(r.pages)} pages; text: {txt[:200]!r}")
+            w, h = float(r.pages[1].mediabox.width) / 72, float(r.pages[1].mediabox.height) / 72
+            return f"{len(r.pages)} pages ({w:.1f} x {h:.1f} in): cover, styles, order form"
+        await check("line sheet PDF: cover, both styles, order form", sheet_pdf)
+
+        # ---------------- present ----------------
+        async def present():
+            await pg.click("[data-testid=present-btn]")
+            await pg.wait_for_selector(".present-dots button", timeout=30000)
+            n = await pg.locator(".present-dots button").count()
+            await pg.wait_for_timeout(300)
+            await pg.keyboard.press("ArrowRight"); await pg.keyboard.press("ArrowRight"); await pg.wait_for_timeout(700)
+            label = await pg.inner_text(".present-bar .mono")
+            await pg.screenshot(path=f"{OUT}/p4-present.png", timeout=90000)
+            await pg.keyboard.press("Escape"); await pg.wait_for_timeout(300)
+            gone = await pg.locator("[data-testid=present]").count() == 0
+            if n < 5 or not label.startswith("3 /") or not gone: raise AssertionError(f"{n} slides, label {label!r}, closed {gone}")
+            return f"{n} slides (title, front, back, colorways, photo, details), arrows + Esc"
+        await check("present mode: slides, keyboard, exit", present)
 
         # ---------------- 3D ----------------
         # CI has no GPU (software GL): keep the viewer still so it only renders on change

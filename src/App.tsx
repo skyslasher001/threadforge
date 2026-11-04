@@ -14,6 +14,7 @@ import { runBenchmark } from "./lib/bench";
 import { LayersPanel, HistoryPanel } from "./components/SidePanels";
 import { TechPackPanel } from "./components/TechPackPanel";
 import { ShowcasePanel, ShowcaseView } from "./components/showcase/Showcase";
+import { Present } from "./components/showcase/Present";
 import { buildTechPack } from "./lib/techpack";
 import { saveFile } from "./lib/native";
 import { Stage, paintAllViews } from "./components/Stage";
@@ -166,6 +167,8 @@ export default function App() {
       { id: "mode-measure", label: "Go to Measurements", group: "Views", keys: "3", run: () => setMode("measure") },
       { id: "mode-techpack", label: "Go to Tech Pack", group: "Views", keys: "4", run: () => setMode("techpack") },
       { id: "mode-showcase", label: "Go to Showcase", group: "Views", keys: "5", run: () => setMode("showcase") },
+      { id: "present", label: "Present this design (full screen)", group: "Showcase", run: () => s.set({ presenting: true }) },
+      ...(["colorways", "3d", "photo", "social", "linesheet"] as const).map((t) => ({ id: `show-${t}`, label: `Showcase: ${({ colorways: "Colorway matrix", "3d": "3D viewer + turntable", photo: "Photo mockups", social: "Social images", linesheet: "Line sheet PDF" })[t]}`, group: "Showcase", run: () => { setMode("showcase"); s.set({ showTab: t }); } })),
       { id: "export-techpack", label: "Export tech pack PDF", group: "Export", run: exportTechPack },
       { id: "fit", label: "Zoom to fit", group: "Views", keys: "Shift+1", run: () => s.set({ fitRequest: s.fitRequest + 1 }) },
       { id: "focus", label: "Toggle focus mode", group: "Views", keys: "Tab", run: () => s.set({ focus: !s.focus }) },
@@ -433,6 +436,7 @@ export default function App() {
 <ZoomReadout />
       </footer>
 
+      {s.presenting && <Present />}
       {s.palette && <CommandPalette commands={commands} onClose={() => s.set({ palette: false })} />}
       {welcome && <Welcome onClose={() => setWelcome(false)} />}
       {perf && (s.bench.running ? <div className="bench-hud">Measuring… 2,000 paths</div> : <PerfDialog onClose={() => setPerf(false)} onRun={benchmark} />)}

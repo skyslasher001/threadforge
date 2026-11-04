@@ -22,8 +22,10 @@ export interface ShowState {
   // photo mockups
   photoId: string | null;
   // line sheet
-  sheetStyles: { name: string; design: Design }[];
+  sheetStyles: { id: string; design: Design; processed: Record<string, ProcessedGraphic> }[]; // extra styles from other project files
   sheetPerPage: 2 | 4 | 6;
+  sheetBack: boolean;
+  sheetPrices: boolean;
   // AI
   chips: Record<string, string>;
   extra: string;
@@ -46,6 +48,8 @@ export const useShow = create<ShowState>((set) => ({
   photoId: null,
   sheetStyles: [],
   sheetPerPage: 4,
+  sheetBack: true,
+  sheetPrices: true,
   chips: {},
   extra: "",
   set: (p) => set(p),

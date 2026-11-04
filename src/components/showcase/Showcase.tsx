@@ -4,6 +4,7 @@ import { ColorwayMatrix, ColorwayPanel } from "./Colorways";
 import { SocialPanel, SocialView } from "./Social";
 import { Viewer3DPanel, Viewer3DView } from "./Viewer3D";
 import { PhotoPanel, PhotoView } from "./PhotoMockups";
+import { LineSheetPanel, LineSheetView } from "./LineSheet";
 
 interface Tool { id: ShowTab; label: string; view: () => ReactNode; panel: () => ReactNode }
 
@@ -12,6 +13,7 @@ export const SHOW_TOOLS: Tool[] = [
   { id: "3d", label: "3D", view: () => <Viewer3DView />, panel: () => <Viewer3DPanel /> },
   { id: "photo", label: "Photo mockups", view: () => <PhotoView />, panel: () => <PhotoPanel /> },
   { id: "social", label: "Social", view: () => <SocialView />, panel: () => <SocialPanel /> },
+  { id: "linesheet", label: "Line sheet", view: () => <LineSheetView />, panel: () => <LineSheetPanel /> },
 ];
 
 const toolFor = (t: ShowTab) => SHOW_TOOLS.find((x) => x.id === t) ?? SHOW_TOOLS[0];
@@ -27,6 +29,8 @@ export function ShowcaseView() {
         {SHOW_TOOLS.map((x) => (
           <button key={x.id} role="tab" aria-selected={x.id === t.id} className={`sc-tab${x.id === t.id ? " on" : ""}`} onClick={() => set({ showTab: x.id })}>{x.label}</button>
         ))}
+        <div className="spacer" />
+        <button className="btn sm primary present-btn" onClick={() => set({ presenting: true })} data-testid="present-btn">Present</button>
       </div>
       {t.view()}
     </section>
