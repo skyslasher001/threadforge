@@ -23,3 +23,11 @@ Choices made where the build prompt was ambiguous or where this first slice devi
 | 17 | JEF / VP3 not exported yet | DST covers commercial machines, PES Brother, EXP Melco/Bernina |
 | 18 | Mesh counts, hoop sizes and care text are typical defaults | Shown as suggestions; every value is editable or overridden by the shop |
 | 19 | Costing rates start at $0 | No invented prices: the sheet lists which rates you still need to enter |
+| 20 | 3D viewer inflates the flat front/back into a shell instead of draping a sewn 3D pattern | Updates live from any edit with no extra modeling; a cloth-sim drape needs real pattern pieces (Phase 5 candidate) |
+| 21 | Turntables are encoded frame by frame with WebCodecs (H.264 MP4, WebM fallback) | Seamless loop and exact length on any GPU; real-time capture is only the last fallback |
+| 22 | Higgsfield calls run in the Rust shell; the key lives in Windows Credential Manager | The key never touches the web view, project files or browser storage |
+| 23 | Every Higgsfield job is priced with the estimate endpoint before the Generate button appears | No surprise charges; the button shows the price |
+| 24 | In a plain browser (dev preview, tests) the AI tab runs a labelled demo backend | A browser has no safe place for an API key; the demo exercises the full flow without charges |
+| 25 | AI stills are saved in the project; motion clips stay in this computer's IndexedDB | Clips are several MB each; keeping them out of .tforge keeps projects small. "Save clip" exports the file |
+| 26 | Undo/redo never rewinds AI renders | Paid results arriving in the background shouldn't vanish with an unrelated undo |
+| 27 | Line sheet prices appear only when the tech pack costing is complete | A partial cost would under-price the style on a buyer document |

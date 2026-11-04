@@ -15,6 +15,7 @@ import { LayersPanel, HistoryPanel } from "./components/SidePanels";
 import { TechPackPanel } from "./components/TechPackPanel";
 import { ShowcasePanel, ShowcaseView } from "./components/showcase/Showcase";
 import { Present } from "./components/showcase/Present";
+import { resumeJobs } from "./lib/aijobs";
 import { buildTechPack } from "./lib/techpack";
 import { saveFile } from "./lib/native";
 import { Stage, paintAllViews } from "./components/Stage";
@@ -43,7 +44,7 @@ export default function App() {
 
   // Desktop: recover the app-data autosave if it's newer than the browser copy (crash recovery).
   useEffect(() => {
-    recoverFromAppData().then((ok) => ok && setWelcome(false));
+    recoverFromAppData().then((ok) => ok && setWelcome(false)).finally(resumeJobs);
   }, []);
   const [welcome, setWelcome] = useState(() => !hasAutosave());
 
@@ -168,7 +169,7 @@ export default function App() {
       { id: "mode-techpack", label: "Go to Tech Pack", group: "Views", keys: "4", run: () => setMode("techpack") },
       { id: "mode-showcase", label: "Go to Showcase", group: "Views", keys: "5", run: () => setMode("showcase") },
       { id: "present", label: "Present this design (full screen)", group: "Showcase", run: () => s.set({ presenting: true }) },
-      ...(["colorways", "3d", "photo", "social", "linesheet"] as const).map((t) => ({ id: `show-${t}`, label: `Showcase: ${({ colorways: "Colorway matrix", "3d": "3D viewer + turntable", photo: "Photo mockups", social: "Social images", linesheet: "Line sheet PDF" })[t]}`, group: "Showcase", run: () => { setMode("showcase"); s.set({ showTab: t }); } })),
+      ...(["colorways", "3d", "photo", "ai", "social", "linesheet"] as const).map((t) => ({ id: `show-${t}`, label: `Showcase: ${({ colorways: "Colorway matrix", "3d": "3D viewer + turntable", photo: "Photo mockups", ai: "On-model render (Higgsfield)", social: "Social images", linesheet: "Line sheet PDF" })[t]}`, group: "Showcase", run: () => { setMode("showcase"); s.set({ showTab: t }); } })),
       { id: "export-techpack", label: "Export tech pack PDF", group: "Export", run: exportTechPack },
       { id: "fit", label: "Zoom to fit", group: "Views", keys: "Shift+1", run: () => s.set({ fitRequest: s.fitRequest + 1 }) },
       { id: "focus", label: "Toggle focus mode", group: "Views", keys: "Tab", run: () => s.set({ focus: !s.focus }) },

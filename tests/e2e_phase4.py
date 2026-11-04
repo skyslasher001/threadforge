@@ -82,6 +82,59 @@ async def main():
         await check("matrix PNG export", matrix_png)
         await pg.screenshot(path=f"{OUT}/p4-matrix.png", timeout=90000)
 
+
+        # ---------------- on-model render (Higgsfield, demo backend in the browser) ----------------
+        await tab("On-model render")
+        async def ai_prompt():
+            before = await pg.inner_text("[data-testid=ai-prompt]")
+            await pg.click(".chip:text-is('Street lookbook')"); await pg.click(".chip:text-is('Neon night')")
+            after = await pg.inner_text("[data-testid=ai-prompt]")
+            ok = "streetwear" in after and "neon" in after.lower() and "Keep the garment exactly" in after and after != before
+            return "chips rewrite the prompt; garment-lock clause kept" if ok else False
+        await check("prompt builder chips", ai_prompt)
+
+        async def ai_still():
+            await pg.click("[data-testid=ai-price]")
+            await pg.wait_for_selector("[data-testid=ai-generate]", timeout=20000)
+            label = await pg.inner_text("[data-testid=ai-generate]")
+            if "$0.094" not in label: raise AssertionError(f"price label {label!r}")
+            await pg.click("[data-testid=ai-generate]")
+            await pg.wait_for_selector("[data-testid=ai-card][data-status=completed][data-kind=image] img", timeout=30000)
+            r = await state("s.design.showcase.renders[0]")
+            if not (r["src"].startswith("data:image/") and r["usd"] == "0.094" and r["mock"]): raise AssertionError(str({k: str(v)[:40] for k, v in r.items()}))
+            return f"price shown before submit ({label.strip()}), queued -> completed, result saved in the project"
+        await check("still render: price first, then job runs to a saved result", ai_still)
+
+        async def ai_undo_keeps():
+            n = await state("s.design.showcase.renders.length")
+            await pg.evaluate("window.__threadforge.store.getState().commit(d => ({ ...d, name: d.name + ' x' }), 'Rename')")
+            await pg.keyboard.press("Control+z"); await pg.wait_for_timeout(200)
+            return await state("s.design.showcase.renders.length") == n
+        await check("undo never removes a paid render", ai_undo_keeps)
+
+        async def ai_motion():
+            await pg.locator("[data-testid=ai-card][data-kind=image] .ai-media").first.click()
+            await pg.click("[data-testid=ai-animate-price]")
+            await pg.wait_for_selector("[data-testid=ai-animate]", timeout=20000)
+            label = await pg.inner_text("[data-testid=ai-animate]")
+            await pg.click("[data-testid=ai-animate]")
+            await pg.wait_for_selector("[data-testid=ai-card][data-status=completed][data-kind=video] video", timeout=90000)
+            src = await pg.get_attribute("[data-testid=ai-card][data-kind=video] video", "src")
+            size = await pg.evaluate("(async () => { const s = window.__threadforge.store.getState(); const r = s.design.showcase.renders.find(x => x.kind === 'video'); const b = await (await fetch(document.querySelector('[data-testid=ai-card][data-kind=video] video').src)).blob(); return [b.size, r.parentId != null]; })()")
+            if not (src.startswith("blob:") and size[0] > 1000 and size[1]): raise AssertionError(f"{src} {size}")
+            return f"{label.strip()}; clip {size[0]/1e3:.0f} KB kept on this computer, linked to its still"
+        await check("animate a still into a clip", ai_motion)
+
+        async def ai_cancel():
+            await pg.click("[data-testid=ai-price]"); await pg.wait_for_selector("[data-testid=ai-generate]", timeout=20000)
+            await pg.click("[data-testid=ai-generate]")
+            await pg.wait_for_selector("[data-testid=ai-card][data-status=queued], [data-testid=ai-card][data-status=in_progress]", timeout=10000)
+            await pg.locator("[data-testid=ai-card]").first.locator("button[title=Cancel]").click()
+            await pg.wait_for_selector("[data-testid=ai-card][data-status=canceled]", timeout=10000)
+            return "running job canceled"
+        await check("cancel a running job", ai_cancel)
+        await pg.screenshot(path=f"{OUT}/p4-ai.png", timeout=90000)
+
         # ---------------- social ----------------
         await tab("Social")
         sizes = {"Instagram post": (1080, 1350), "Square post": (1080, 1080), "Story / Reel / TikTok": (1080, 1920), "Store product image": (2000, 2000)}

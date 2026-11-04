@@ -314,7 +314,7 @@ const tick = () => new Promise<void>((r) => setTimeout(r, 0));
  * so the loop is seamless and the clip is the right length however fast the GPU is.
  * Returns null when WebCodecs can't encode here (the caller falls back to real-time capture).
  */
-async function encodeFrames(canvas: HTMLCanvasElement, w: number, h: number, frames: number, draw: (i: number) => void, onProgress: (p: number) => void): Promise<{ blob: Blob; ext: string } | null> {
+export async function encodeFrames(canvas: HTMLCanvasElement, w: number, h: number, frames: number, draw: (i: number) => void, onProgress: (p: number) => void): Promise<{ blob: Blob; ext: string } | null> {
   if (typeof VideoEncoder === "undefined" || typeof VideoFrame === "undefined") return null;
   const bitrate = Math.round(w * h * FPS * 0.18);
   const candidates = [

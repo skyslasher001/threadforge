@@ -66,6 +66,11 @@ jobs:
         with:
           workspaces: src-tauri -> target
       - run: npm ci
+      - name: Higgsfield bridge against a mock API (Rust)
+        shell: bash
+        run: |
+          sed -i 's/^python3 /python /' tests/hf_bridge.sh
+          bash tests/hf_bridge.sh
       - name: Build THREADFORGE.exe + installers
         run: npm run tauri build
       - uses: actions/upload-artifact@v4

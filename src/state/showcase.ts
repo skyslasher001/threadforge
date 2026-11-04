@@ -29,6 +29,7 @@ export interface ShowState {
   // AI
   chips: Record<string, string>;
   extra: string;
+  keyVersion: number; // bumps when the API key is saved/removed
   set: (p: Partial<ShowState>) => void;
 }
 
@@ -52,6 +53,7 @@ export const useShow = create<ShowState>((set) => ({
   sheetPrices: true,
   chips: {},
   extra: "",
+  keyVersion: 0,
   set: (p) => set(p),
 }));
 

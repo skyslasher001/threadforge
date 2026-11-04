@@ -5,6 +5,7 @@ import { SocialPanel, SocialView } from "./Social";
 import { Viewer3DPanel, Viewer3DView } from "./Viewer3D";
 import { PhotoPanel, PhotoView } from "./PhotoMockups";
 import { LineSheetPanel, LineSheetView } from "./LineSheet";
+import { AiPanel, AiView } from "./AiRender";
 
 interface Tool { id: ShowTab; label: string; view: () => ReactNode; panel: () => ReactNode }
 
@@ -12,6 +13,7 @@ export const SHOW_TOOLS: Tool[] = [
   { id: "colorways", label: "Colorways", view: () => <ColorwayMatrix />, panel: () => <ColorwayPanel /> },
   { id: "3d", label: "3D", view: () => <Viewer3DView />, panel: () => <Viewer3DPanel /> },
   { id: "photo", label: "Photo mockups", view: () => <PhotoView />, panel: () => <PhotoPanel /> },
+  { id: "ai", label: "On-model render", view: () => <AiView />, panel: () => <AiPanel /> },
   { id: "social", label: "Social", view: () => <SocialView />, panel: () => <SocialPanel /> },
   { id: "linesheet", label: "Line sheet", view: () => <LineSheetView />, panel: () => <LineSheetPanel /> },
 ];

@@ -434,7 +434,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .perf-table td, .perf-table th { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; }
 .perf-table th { color: var(--text-3); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
 .perf-table td.v { font-family: var(--mono); text-align: right; }
-.pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.pill { white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
 .pill.good { background: rgba(52, 211, 153, 0.14); color: var(--good); }
 .pill.warn { background: rgba(251, 191, 36, 0.14); color: var(--warn); }
 .pill.bad { background: rgba(248, 113, 113, 0.14); color: var(--bad); }
@@ -560,3 +560,32 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .present-dots { display: flex; gap: 6px; }
 .present-dots button { width: 7px; height: 7px; border-radius: 50%; border: 0; padding: 0; background: rgba(255,255,255,0.3); cursor: pointer; }
 .present-dots button.on { background: #fff; width: 20px; border-radius: 4px; }
+
+/* AI render */
+.sc-body.ai { flex-direction: row; }
+.ai-compose { width: min(560px, 48%); border-right: 1px solid var(--line); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.ai-row { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.ai-row .seg { flex-wrap: wrap; }
+.ai-label { width: 70px; flex-shrink: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); padding-top: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+.chip {
+  border: 1px solid var(--line-2); background: var(--raised); color: var(--text-2); border-radius: 999px; padding: 4px 11px; font-size: 12px;
+  cursor: pointer; transition: background 120ms var(--ease), color 120ms var(--ease), border-color 120ms var(--ease);
+}
+.chip:hover { color: var(--text); }
+.chip.on { background: var(--accent-soft); color: var(--text); border-color: var(--accent-line); }
+.ai-prompt { font-size: 11px; line-height: 1.55; color: var(--text-2); background: var(--raised); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.ai-go { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; position: sticky; bottom: -14px; background: var(--canvas); padding: 10px 0; }
+.ai-results { flex: 1; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; align-content: start; }
+.ai-card { border: 1px solid var(--line-2); border-radius: 10px; overflow: hidden; background: var(--raised); animation: pop 220ms var(--ease); }
+.ai-media { aspect-ratio: 4 / 5; position: relative; background: var(--artboard); cursor: zoom-in; display: grid; place-items: center; }
+.ai-media img, .ai-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ai-card.queued .ai-media img, .ai-card.in_progress .ai-media img { filter: blur(6px) brightness(0.6); }
+.ai-run { position: absolute; inset: auto 10px 10px 10px; display: flex; gap: 8px; align-items: center; justify-content: center; font-size: 12px; background: rgba(0,0,0,0.55); color: #fff; padding: 6px; border-radius: 8px; }
+.ai-err { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; font-size: 12px; color: var(--warn); }
+.ai-meta { display: flex; align-items: center; gap: 6px; padding: 6px 8px; }
+.ai-lightbox { display: flex; gap: 0; width: min(1100px, 94vw); max-height: 86vh; background: var(--panel-solid); border: 1px solid var(--line-2); border-radius: var(--r-modal); overflow: hidden; box-shadow: var(--shadow); animation: pop 200ms var(--ease); }
+.ai-lb-media { flex: 1; background: #000; display: grid; place-items: center; min-width: 0; }
+.ai-lb-media img, .ai-lb-media video { max-width: 100%; max-height: 86vh; display: block; }
+.ai-lb-side { width: 320px; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.ai-meta .pill:not(.good):not(.warn), .section-head .pill:not(.good):not(.warn) { background: var(--raised-2); color: var(--text-2); }

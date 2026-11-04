@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type {
+import type { AiRender,
   AccentId, BrushStyle, Design, Graphic, Layer, ProcessedGraphic, TemplateId, ThemeId, Tool, Units, View,
 } from "../types";
 import { TEMPLATES } from "../data/measurements";
@@ -97,6 +97,7 @@ interface State {
 
   commit: (fn: (d: Design) => Design, label?: string) => void;
   live: (fn: (d: Design) => Design) => void;
+  setRenders: (fn: (r: AiRender[]) => AiRender[]) => void;
   checkpoint: (label?: string) => void;
   undo: () => void;
   redo: () => void;
@@ -197,6 +198,12 @@ function loadPrefs(): Partial<State> {
 }
 
 const HISTORY_MAX = 150;
+
+/** AI renders are paid results that arrive asynchronously: undo/redo never removes or rewinds them. */
+const keepRenders = (target: Design, current: Design): Design =>
+  target.showcase && current.showcase && target.showcase.renders !== current.showcase.renders
+    ? { ...target, showcase: { ...target.showcase, renders: current.showcase.renders } }
+    : target;
 let toastId = 1;
 const saved = loadSaved();
 const initial = saved?.d ?? newDesign("tee");
@@ -249,6 +256,10 @@ export const useStore = create<State>((set, get) => ({
     set({ design: next, past: [...past, { d: design, label }].slice(-HISTORY_MAX), future: [] });
   },
   live: (fn) => set({ design: fn(get().design) }),
+  setRenders: (fn) => {
+    const d = get().design;
+    set({ design: { ...d, showcase: { ...d.showcase!, renders: fn(d.showcase?.renders ?? []) } } });
+  },
   checkpoint: (label = "Edit") => {
     const { design, past } = get();
     set({ past: [...past, { d: design, label }].slice(-HISTORY_MAX), future: [] });
@@ -257,13 +268,13 @@ export const useStore = create<State>((set, get) => ({
     const { past, design, future } = get();
     if (!past.length) return;
     const e = past[past.length - 1];
-    set({ design: e.d, past: past.slice(0, -1), future: [{ d: design, label: e.label }, ...future] });
+    set({ design: keepRenders(e.d, design), past: past.slice(0, -1), future: [{ d: design, label: e.label }, ...future] });
   },
   redo: () => {
     const { past, design, future } = get();
     if (!future.length) return;
     const e = future[0];
-    set({ design: e.d, past: [...past, { d: design, label: e.label }], future: future.slice(1) });
+    set({ design: keepRenders(e.d, design), past: [...past, { d: design, label: e.label }], future: future.slice(1) });
   },
   jumpTo: (index) => {
     // index 0 = oldest state, past.length = current
