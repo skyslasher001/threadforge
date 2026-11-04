@@ -13,9 +13,8 @@ These apply to every session (human or AI) that changes this repository.
 - Finishing a roadmap phase (or a fix users need) = a release.
 - Bump the version in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`,
   add a `CHANGELOG.md` section, commit and push.
-- Publish the release: `gh release create vX.Y.Z --target main --title "THREADFORGE vX.Y.Z" --notes-file <notes>`
-  (or GitHub's "Draft a new release" page). Publishing triggers the build, which attaches the
-  Windows `.exe` and `.msi` installers to that release.
+- That's it: when a push to `main` carries a version with no GitHub Release yet, the build creates
+  release `vX.Y.Z` with notes from `CHANGELOG.md` and attaches the Windows `.exe` and `.msi`.
 
 ## Project map
 - `src/` React + TypeScript UI. `src/lib/` engines (raster, embroidery, films, tech pack).
