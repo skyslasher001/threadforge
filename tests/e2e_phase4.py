@@ -319,22 +319,33 @@ async def main():
         g = await ctx2.new_page()
         async def gate4():
             t = time.time()
-            await g.goto("file://" + HTML); await g.wait_for_timeout(500)
-            await g.click(".welcome-card >> text=Pullover Hoodie"); await g.click("text=Start with sample artwork")
-            await g.wait_for_timeout(1500)
-            await g.keyboard.press("5"); await g.click(".sc-tab:text-is('On-model render')")
-            await g.click("[data-testid=ai-price]"); await g.wait_for_selector("[data-testid=ai-generate]", timeout=30000)
-            await g.click("[data-testid=ai-generate]")
-            await g.wait_for_selector("[data-testid=ai-card][data-status=completed] img", timeout=60000)
-            t_render = time.time() - t
-            # GitHub runners render 3D on 2 CPU cores with no GPU: a 2 s turn there, 4 s elsewhere
-            secs = 2 if os.environ.get("CI") else 4
-            await g.evaluate(f"window.__threadforge.show.getState().set({{ spin: false, recSeconds: {secs} }})")
-            await g.click(".sc-tab:text-is('3D')")
-            await g.wait_for_function("parseInt(document.querySelector('[data-testid=v3d-stats]').textContent.replace(/,/g, '')) > 1000", timeout=60000)
-            async with g.expect_download(timeout=240000) as d:
-                await g.click("text=Record turntable")
-            path = f"{OUT}/gate4-turntable"; await (await d.value).save_as(path)
+            stage = ["start"]
+            async def c(sel, timeout=90000):
+                stage[0] = sel
+                await g.click(sel, timeout=timeout)
+            try:
+                await g.goto("file://" + HTML); await g.wait_for_timeout(500)
+                await c(".welcome-card >> text=Pullover Hoodie"); await c("text=Start with sample artwork")
+                await g.wait_for_timeout(1500)
+                await g.keyboard.press("5"); await c(".sc-tab:text-is('On-model render')")
+                await c("[data-testid=ai-price]"); await g.wait_for_selector("[data-testid=ai-generate]", timeout=60000)
+                await c("[data-testid=ai-generate]")
+                stage[0] = "render result"
+                await g.wait_for_selector("[data-testid=ai-card][data-status=completed] img", timeout=90000)
+                t_render = time.time() - t
+                # GitHub runners render 3D on 2 CPU cores with no GPU: a 2 s turn there, 4 s elsewhere
+                secs = 2 if os.environ.get("CI") else 4
+                await g.evaluate(f"window.__threadforge.show.getState().set({{ spin: false, recSeconds: {secs} }})")
+                await c(".sc-tab:text-is('3D')")
+                stage[0] = "3D mesh"
+                await g.wait_for_function("parseInt(document.querySelector('[data-testid=v3d-stats]').textContent.replace(/,/g, '')) > 1000", timeout=90000)
+                await g.wait_for_selector("button:has-text('Record turntable'):not([disabled])", timeout=90000)
+                async with g.expect_download(timeout=300000) as d:
+                    await c("text=Record turntable")
+                path = f"{OUT}/gate4-turntable"; await (await d.value).save_as(path)
+            except Exception as e:
+                await g.screenshot(path=f"{OUT}/gate4-fail.png", timeout=60000)
+                raise AssertionError(f"at {stage[0]}: {str(e)[:160]}")
             total = time.time() - t
             if total > 180: raise AssertionError(f"{total:.0f} s")
             return f"{total:.0f} s total (render ready at {t_render:.0f} s; {secs} s turntable at 1080 on software GL), budget 180 s"
