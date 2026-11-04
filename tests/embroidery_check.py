@@ -1,5 +1,5 @@
 """
-Verify THREADFORGE's DST / EXP / PES writers against pyembroidery (pip install pyembroidery).
+Verify THREADFORGE's DST / EXP / PES / JEF / VP3 writers against pyembroidery (pip install pyembroidery).
 
 1. Byte-for-byte: feed the same stitch stream to pyembroidery's format writers.
 2. Read-back: open each file with pyembroidery's readers and compare stitches, colors, size.
@@ -13,6 +13,8 @@ import importlib
 DstWriter = importlib.import_module("pyembroidery.DstWriter")
 ExpWriter = importlib.import_module("pyembroidery.ExpWriter")
 PesWriter = importlib.import_module("pyembroidery.PesWriter")
+JefWriter = importlib.import_module("pyembroidery.JefWriter")
+Vp3Writer = importlib.import_module("pyembroidery.Vp3Writer")
 
 d = sys.argv[1]
 data = json.load(open(f"{d}/stream.json"))
@@ -27,7 +29,7 @@ def pattern():
     p.metadata("name", data["name"])
     return p
 
-for ext, writer, settings in [("dst", DstWriter, None), ("exp", ExpWriter, None), ("pes", PesWriter, {"truncated": True, "version": 1})]:
+for ext, writer, settings in [("dst", DstWriter, None), ("exp", ExpWriter, None), ("pes", PesWriter, {"truncated": True, "version": 1}), ("jef", JefWriter, {"date": "20261104120000"}), ("vp3", Vp3Writer, None)]:
     buf = io.BytesIO()
     writer.write(pattern(), buf, settings)
     ref = buf.getvalue()
@@ -41,7 +43,7 @@ for ext, writer, settings in [("dst", DstWriter, None), ("exp", ExpWriter, None)
 stream = data["stitches"]
 n_st = sum(1 for s in stream if s[2] == 0)
 n_cc = sum(1 for s in stream if s[2] == 5)
-for ext in ("dst", "exp", "pes"):
+for ext in ("dst", "exp", "pes", "jef", "vp3"):
     p = pyembroidery.read(f"{d}/test.{ext}")
     if p is None:
         fails.append(f"{ext}: pyembroidery could not read it"); continue

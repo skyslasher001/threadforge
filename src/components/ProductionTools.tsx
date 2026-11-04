@@ -3,7 +3,7 @@ import { useStore } from "../state/store";
 import type { Graphic, InkType } from "../types";
 import { digitizeGraphic, stitchMinutes } from "../lib/imaging";
 import { renderStitches, type Digitized } from "../lib/embroidery/digitize";
-import { writeDST, writeEXP, writePES } from "../lib/embroidery/formats";
+import { EMB_WRITERS, type EmbFormat } from "../lib/embroidery/formats";
 import { filmsPdf } from "../lib/films";
 import { HOOPS, INKS, hoopFor, printOrder } from "../lib/production";
 import { saveFile } from "../lib/native";
@@ -87,9 +87,9 @@ export function EmbroideryTools({ g }: { g: Graphic }) {
     ctx.drawImage(src, 0, 0);
   }, [d, upto, g]);
 
-  const save = async (fmt: "dst" | "pes" | "exp") => {
+  const save = async (fmt: EmbFormat) => {
     if (!d) return;
-    const bytes = fmt === "dst" ? writeDST(d.pattern) : fmt === "pes" ? writePES(d.pattern) : writeEXP(d.pattern);
+    const bytes = EMB_WRITERS[fmt](d.pattern);
     const where = await saveFile(bytes, `${slug(g.name)}.${fmt}`, [{ name: `${fmt.toUpperCase()} embroidery`, extensions: [fmt] }]);
     if (where) toast(`${fmt.toUpperCase()} saved (${d.stitchCount.toLocaleString()} stitches). Test-sew before production.`, "good");
   };
@@ -104,6 +104,7 @@ export function EmbroideryTools({ g }: { g: Graphic }) {
             <div className="stat"><div className="v">{(d.stitchCount / 1000).toFixed(1)}k</div><div className="k">stitches</div></div>
             <div className="stat"><div className="v">{stitchMinutes(d).toFixed(0)}m</div><div className="k">run @ 800 spm</div></div>
             <div className="stat"><div className="v">{d.trims}</div><div className="k">trims</div></div>
+            <div className="stat"><div className="v">{d.satinShapes}</div><div className="k">satin shapes</div></div>
           </div>
           <div className={`notice ${hoop ? "good" : "bad"}`}>
             {hoop ? `Fits a ${hoop.name} hoop (${hoop.w} × ${hoop.h} mm field).` : `Larger than a ${HOOPS[HOOPS.length - 1].name} hoop. Shrink it or split into hoopings.`}
@@ -119,9 +120,11 @@ export function EmbroideryTools({ g }: { g: Graphic }) {
             <button className="btn sm primary" onClick={() => save("dst")}><IcDownload size={13} /> DST</button>
             <button className="btn sm" onClick={() => save("pes")}>PES</button>
             <button className="btn sm" onClick={() => save("exp")}>EXP</button>
+            <button className="btn sm" onClick={() => save("jef")}>JEF</button>
+            <button className="btn sm" onClick={() => save("vp3")}>VP3</button>
           </div>
           <span className="faint small" style={{ lineHeight: 1.4 }}>
-            Tatami fill at 0.4 mm density with underlay and pull compensation. DST for commercial machines, PES for Brother / Baby Lock, EXP for Melco / Bernina. Auto-digitized files: always sew a test first.
+            Tatami fill at 0.4 mm with underlay and pull compensation; strokes and lettering up to 6 mm wide sew as satin columns that follow the curve. DST for commercial machines, PES for Brother / Baby Lock, EXP for Melco / Bernina, JEF for Janome, VP3 for Husqvarna Viking / Pfaff. Auto-digitized files: always sew a test first.
           </span>
         </>
       )}

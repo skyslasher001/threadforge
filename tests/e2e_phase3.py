@@ -47,7 +47,7 @@ async def main():
             return await pg.locator("text=hoop").first.is_visible()
         await check("embroidery panel shows stats and hoop", emb_panel)
 
-        for fmt in ("dst", "pes", "exp"):
+        for fmt in ("dst", "pes", "exp", "jef", "vp3"):
             async def emb(fmt=fmt):
                 path = await download(lambda: pg.click(f"button:text-is('{fmt.upper()}')"), f"badge.{fmt}")
                 pat = pyembroidery.read(path)

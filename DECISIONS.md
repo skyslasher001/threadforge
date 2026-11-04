@@ -31,3 +31,5 @@ Choices made where the build prompt was ambiguous or where this first slice devi
 | 25 | AI stills are saved in the project; motion clips stay in this computer's IndexedDB | Clips are several MB each; keeping them out of .tforge keeps projects small. "Save clip" exports the file |
 | 26 | Undo/redo never rewinds AI renders | Paid results arriving in the background shouldn't vanish with an unrelated undo |
 | 27 | Line sheet prices appear only when the tech pack costing is complete | A partial cost would under-price the style on a buyer document |
+| 28 | Satin columns only for clean strokes 1.2-6 mm wide, at least 8 mm long, with up to 3 center-line branches | Rays, bars, rings and curves sew as satin that follows the stroke; tiny lettering stays fill, which is more legible from an auto-digitizer |
+| 29 | JEF files carry no explicit trim commands (pyembroidery's default) | Janome machines trim on long jumps; files are byte-identical to the reference |
