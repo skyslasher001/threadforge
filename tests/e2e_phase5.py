@@ -124,6 +124,93 @@ async def main():
             return "cover: logo, brand name, tagline"
         await check("line sheet cover uses the Brand Kit", linesheet_branded)
 
+
+        # ---------------- Export everything ----------------
+        async def bundle():
+            await pg.keyboard.press("Control+Shift+E")
+            await pg.wait_for_selector("[data-testid=bundle-go]", timeout=5000)
+            for f in ["JEF", "VP3"]:
+                await pg.click(f".auto-card .chip:text-is('{f}')")
+            label = await pg.inner_text("[data-testid=bundle-go]")
+            await pg.screenshot(path=f"{OUT}/p5-bundle.png")
+            want = int(label.split()[1])
+            path = await download(lambda: pg.click("[data-testid=bundle-go]"), "delivery.zip", timeout=240000)
+            z = zipfile.ZipFile(path)
+            names = z.namelist()
+            if z.testzip() is not None: raise AssertionError("corrupt entry")
+            if len(names) != want + 1: raise AssertionError(f"{len(names)} files vs {want} + README")
+            import pyembroidery, json
+            dst = next(n for n in names if n.endswith(".dst")); open(f"{OUT}/z.dst", "wb").write(z.read(dst))
+            st = sum(1 for x in pyembroidery.read(f"{OUT}/z.dst").stitches if (x[2] & 0xFF) == 0)
+            pdfs = [n for n in names if n.endswith(".pdf")]
+            pages = {n.split("/")[-1]: len(PdfReader(io.BytesIO(z.read(n))).pages) for n in pdfs}
+            pngs = [n for n in names if n.endswith(".png")]
+            sizes = {n.split("/")[-1]: Image.open(io.BytesIO(z.read(n))).size for n in pngs}
+            proj = json.loads(z.read(next(n for n in names if n.endswith(".tforge"))))
+            if not (st > 2000 and all(v > 0 for v in pages.values()) and any(s == (1080, 1920) for s in sizes.values()) and proj["design"]["name"]):
+                raise AssertionError(f"{st} stitches, {pages}, {sizes}")
+            exts = sorted({n.rsplit(".", 1)[-1] for n in names})
+            return f"{len(names)} files in one ZIP ({', '.join(exts)}); DST {st:,} stitches; PDFs {pages}"
+        await check("Export everything: one ZIP with every deliverable, all readable", bundle)
+
+        # ---------------- Macros ----------------
+        async def macro_record():
+            await pg.click("text=Artwork layout") if await pg.locator("text=Artwork layout").count() else None
+            await pg.click("[data-testid=menu-macros]")
+            await pg.click("[data-testid=macro-record]")
+            await pg.wait_for_selector("[data-testid=rec-pill]", timeout=5000)
+            await pg.evaluate("""(() => { const s = window.__threadforge.store.getState();
+              s.commit(d => ({ ...d, fabricId: 'terry', parts: { ...d.parts, fit: 'boxy' }, previewSize: 'L' }), 'Fabric + fit');
+              s.commit(d => ({ ...d, graphics: d.graphics.map(g => ({ ...g, method: 'screen', colors: 2 })) }), 'Artwork to screen');
+            })()""")
+            await pg.fill("[data-testid=rec-pill] input", "Drop 02 house style")
+            await pg.click("[data-testid=rec-pill] button:text-is('Stop')")
+            m = await pg.evaluate("window.__threadforge.macros.getState().macros[0]")
+            kinds = [s["kind"] for s in m["steps"]]
+            v = m["steps"][0]["values"]
+            if not (m["name"] == "Drop 02 house style" and kinds == ["fields", "graphics"] and v["parts"]["fit"] == "boxy" and v["previewSize"] == "L" and "name" not in v):
+                raise AssertionError(str(m)[:300])
+            return f"recorded {len(m['steps'])} steps: {', '.join(kinds)}"
+        await check("record a macro from real edits", macro_record)
+
+        async def macro_run():
+            # a different design: a fresh tee
+            await pg.evaluate("window.__threadforge.store.getState().loadDesign({ ...window.__threadforge.newDesign('tee'), name: 'Tee for macro' })")
+            await pg.click("text=Artwork layout") if await pg.locator("text=Artwork layout").count() else None
+            await pg.click("[data-testid=menu-macros]")
+            await pg.screenshot(path=f"{OUT}/p5-macros.png")
+            await pg.click("[data-testid=macro-run]")
+            await pg.wait_for_timeout(300)
+            after = await state("[s.design.name, s.design.parts.fit, s.design.previewSize, s.design.template]")
+            await pg.click(".scrim .btn.icon.ghost")
+            await pg.keyboard.press("Control+z"); await pg.wait_for_timeout(200)
+            undone = await state("[s.design.parts.fit, s.design.previewSize]")
+            if not (after[0] == "Tee for macro" and after[1] == "boxy" and after[2] == "L" and undone == ["regular", "M"]): raise AssertionError(f"{after} / undo {undone}")
+            return "applied in one undoable step; design name kept"
+        await check("run a macro on another design, undo in one step", macro_run)
+
+        async def macro_files():
+            import json
+            paths = []
+            for i, tpl in enumerate(["tee", "crewneck"]):
+                d = await pg.evaluate(f"(() => ({{ ...window.__threadforge.newDesign('{tpl}'), name: 'Batch {i+1}' }}))()")
+                pth = f"{OUT}/batch-{i+1}.tforge"; json.dump({"app": "THREADFORGE", "schema": 2, "design": d}, open(pth, "w")); paths.append(pth)
+            await pg.click("[data-testid=menu-macros]") if await pg.locator("[data-testid=menu-macros]").is_visible() else None
+            if not await pg.locator("[data-testid=macro]").count():
+                await pg.click("text=Artwork layout"); await pg.click("[data-testid=menu-macros]")
+            async with pg.expect_download(timeout=120000) as dl:
+                async with pg.expect_file_chooser() as fc:
+                    await pg.click("[data-testid=macro] button:text-is('Run on files…')")
+                await (await fc.value).set_files(paths)
+            out = f"{OUT}/batch.zip"; await (await dl.value).save_as(out)
+            z = zipfile.ZipFile(out)
+            ds = [json.loads(z.read(n))["design"] for n in z.namelist() if n.endswith(".tforge")]
+            ok = len(ds) == 2 and all(d["parts"]["fit"] == "boxy" and d["previewSize"] == "L" for d in ds) and sorted(d["name"] for d in ds) == ["Batch 1", "Batch 2"]
+            await pg.keyboard.press("Escape")
+            if not ok: raise AssertionError(str([(d["name"], d["parts"]["fit"]) for d in ds]))
+            return "2 projects updated and returned in one ZIP"
+        await check("run a macro on a batch of project files", macro_files)
+
         async def brand_persists():
             await pg.reload(); await pg.wait_for_timeout(1500)
             return await brand("[k.name, !!k.logo, k.colors.length]") == ["Ember Wolf", True, 2]

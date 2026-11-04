@@ -98,44 +98,50 @@ export function ColorwayPanel() {
 }
 
 /** Print-ready sheet with every colorway, labelled. */
+export async function matrixCanvas(d: Design, processed: Record<string, ProcessedGraphic>, back: boolean): Promise<HTMLCanvasElement | null> {
+  const cells = [];
+  for (const cw of d.colorways) {
+    const o = { body: cw.body, trim: cw.trim, pxPerInch: 22, background: null, previews: previewsOf(d, processed) };
+    cells.push({ cw, c: back ? await renderPair(d, o, 1) : (await renderGarment(d, { ...o, view: "front" })).canvas });
+  }
+  if (!cells.length) return null;
+  const cols = Math.min(back ? 2 : 4, cells.length);
+  const rows = Math.ceil(cells.length / cols);
+  const cw = Math.max(...cells.map((x) => x.c.width)), ch = Math.max(...cells.map((x) => x.c.height));
+  const pad = 60, label = 90, head = 170;
+  const c = document.createElement("canvas");
+  c.width = cols * (cw + pad) + pad;
+  c.height = head + rows * (ch + label + pad) + pad / 2;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#F1F1F3";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.fillStyle = "#141418";
+  ctx.font = `700 54px "Inter Variable", Inter, "Segoe UI", sans-serif`;
+  ctx.fillText(d.name, pad, 92);
+  ctx.fillStyle = "#6a6a74";
+  ctx.font = `500 26px "Inter Variable", Inter, "Segoe UI", sans-serif`;
+  ctx.fillText(`${d.colorways.length} colorways · ${d.previewSize} sample`, pad, 134);
+  cells.forEach(({ cw: k, c: img }, i) => {
+    const x = pad + (i % cols) * (cw + pad), y = head + Math.floor(i / cols) * (ch + label + pad);
+    ctx.drawImage(img, x + (cw - img.width) / 2, y + (ch - img.height) / 2);
+    ctx.fillStyle = k.body; ctx.fillRect(x + 4, y + ch + 22, 34, 34);
+    ctx.fillStyle = k.trim; ctx.fillRect(x + 42, y + ch + 22, 34, 34);
+    ctx.strokeStyle = "rgba(0,0,0,0.15)"; ctx.strokeRect(x + 4, y + ch + 22, 72, 34);
+    ctx.fillStyle = "#141418"; ctx.font = `650 28px "Inter Variable", Inter, sans-serif`;
+    ctx.fillText(k.name, x + 92, y + ch + 46);
+    ctx.fillStyle = "#6a6a74"; ctx.font = `500 20px "JetBrains Mono Variable", monospace`;
+    ctx.fillText(k.trim === k.body ? k.body : `${k.body} / ${k.trim}`, x + 92, y + ch + 76);
+  });
+  return c;
+}
+
 export async function exportMatrix(d: Design, processed: Record<string, ProcessedGraphic>, back: boolean) {
   const st = useStore.getState();
   try {
-    const cells = [];
-    for (const cw of d.colorways) {
-      const o = { body: cw.body, trim: cw.trim, pxPerInch: 22, background: null, previews: previewsOf(d, processed) };
-      cells.push({ cw, c: back ? await renderPair(d, o, 1) : (await renderGarment(d, { ...o, view: "front" })).canvas });
-    }
-    if (!cells.length) return st.toast("Add a colorway first.", "warn");
-    const cols = Math.min(back ? 2 : 4, cells.length);
-    const rows = Math.ceil(cells.length / cols);
-    const cw = Math.max(...cells.map((x) => x.c.width)), ch = Math.max(...cells.map((x) => x.c.height));
-    const pad = 60, label = 90, head = 170;
-    const c = document.createElement("canvas");
-    c.width = cols * (cw + pad) + pad;
-    c.height = head + rows * (ch + label + pad) + pad / 2;
-    const ctx = c.getContext("2d")!;
-    ctx.fillStyle = "#F1F1F3";
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.fillStyle = "#141418";
-    ctx.font = `700 54px "Inter Variable", Inter, "Segoe UI", sans-serif`;
-    ctx.fillText(d.name, pad, 92);
-    ctx.fillStyle = "#6a6a74";
-    ctx.font = `500 26px "Inter Variable", Inter, "Segoe UI", sans-serif`;
-    ctx.fillText(`${d.colorways.length} colorways · ${d.previewSize} sample`, pad, 134);
-    cells.forEach(({ cw: k, c: img }, i) => {
-      const x = pad + (i % cols) * (cw + pad), y = head + Math.floor(i / cols) * (ch + label + pad);
-      ctx.drawImage(img, x + (cw - img.width) / 2, y + (ch - img.height) / 2);
-      ctx.fillStyle = k.body; ctx.fillRect(x + 4, y + ch + 22, 34, 34);
-      ctx.fillStyle = k.trim; ctx.fillRect(x + 42, y + ch + 22, 34, 34);
-      ctx.strokeStyle = "rgba(0,0,0,0.15)"; ctx.strokeRect(x + 4, y + ch + 22, 72, 34);
-      ctx.fillStyle = "#141418"; ctx.font = `650 28px "Inter Variable", Inter, sans-serif`;
-      ctx.fillText(k.name, x + 92, y + ch + 46);
-      ctx.fillStyle = "#6a6a74"; ctx.font = `500 20px "JetBrains Mono Variable", monospace`;
-      ctx.fillText(k.trim === k.body ? k.body : `${k.body} / ${k.trim}`, x + 92, y + ch + 76);
-    });
+    const c = await matrixCanvas(d, processed, back);
+    if (!c) return st.toast("Add a colorway first.", "warn");
     const where = await download(await canvasToBlob(c), `${slug(d.name)}-colorways.png`);
-    if (where) st.toast(`Colorway matrix exported (${cells.length} colorways)`, "good");
+    if (where) st.toast(`Colorway matrix exported (${d.colorways.length} colorways)`, "good");
   } catch (e) {
     st.toast(`Matrix export failed: ${(e as Error).message}`, "warn");
   }

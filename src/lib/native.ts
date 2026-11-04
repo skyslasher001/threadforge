@@ -80,6 +80,29 @@ export async function openFile(filters: FileFilter[], accept: string): Promise<{
   return { name: path.split(/[\\/]/).pop() ?? "file", bytes };
 }
 
+/** Pick and read several files. Returns [] when cancelled. */
+export async function openFiles(filters: FileFilter[], accept: string): Promise<{ name: string; bytes: Uint8Array }[]> {
+  if (!isTauri()) {
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = accept;
+      input.multiple = true;
+      input.onchange = async () => {
+        const fs = Array.from(input.files ?? []);
+        resolve(await Promise.all(fs.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) }))));
+      };
+      input.click();
+    });
+  }
+  const { open } = await import("@tauri-apps/plugin-dialog");
+  const { readFile } = await import("@tauri-apps/plugin-fs");
+  const paths = await open({ multiple: true, directory: false, filters });
+  if (!paths) return [];
+  const list = Array.isArray(paths) ? paths : [paths];
+  return Promise.all(list.map(async (p) => ({ name: p.split(/[\\/]/).pop() ?? "file", bytes: await readFile(p) })));
+}
+
 // ---- Crash-safe autosave in the app's data folder (desktop only) ----
 
 const AUTOSAVE_FILE = "autosave.tforge";

@@ -17,6 +17,8 @@ import { ShowcasePanel, ShowcaseView } from "./components/showcase/Showcase";
 import { Present } from "./components/showcase/Present";
 import { resumeJobs } from "./lib/aijobs";
 import { loadBrandFromAppData } from "./state/brand";
+import { BundleDialog, MacrosDialog, RecordingPill } from "./components/Automation";
+import { loadMacrosFromAppData } from "./lib/macros";
 import { buildTechPack } from "./lib/techpack";
 import { saveFile } from "./lib/native";
 import { Stage, paintAllViews } from "./components/Stage";
@@ -41,12 +43,14 @@ export default function App() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [menu, setMenu] = useState<"export" | "theme" | "workspace" | null>(null);
   const [perf, setPerf] = useState(false);
+  const [dialog, setDialog] = useState<"bundle" | "macros" | null>(null);
   const resizing = useRef<{ x: number; w: number } | null>(null);
 
   // Desktop: recover the app-data autosave if it's newer than the browser copy (crash recovery).
   useEffect(() => {
     recoverFromAppData().then((ok) => ok && setWelcome(false)).finally(resumeJobs);
     loadBrandFromAppData();
+    loadMacrosFromAppData();
   }, []);
   const [welcome, setWelcome] = useState(() => !hasAutosave());
 
@@ -173,6 +177,8 @@ export default function App() {
       { id: "present", label: "Present this design (full screen)", group: "Showcase", run: () => s.set({ presenting: true }) },
       ...(["colorways", "3d", "photo", "ai", "social", "linesheet", "brand"] as const).map((t) => ({ id: `show-${t}`, label: `Showcase: ${({ colorways: "Colorway matrix", "3d": "3D viewer + turntable", photo: "Photo mockups", ai: "On-model render (Higgsfield)", social: "Social images", linesheet: "Line sheet PDF", brand: "Brand Kit + labels" })[t]}`, group: "Showcase", run: () => { setMode("showcase"); s.set({ showTab: t }); } })),
       { id: "export-techpack", label: "Export tech pack PDF", group: "Export", run: exportTechPack },
+      { id: "export-all", label: "Export everything (one ZIP)", group: "Export", keys: "Ctrl+Shift+E", run: () => setDialog("bundle") },
+      { id: "macros", label: "Macros: record and replay", group: "Automation", run: () => setDialog("macros") },
       { id: "fit", label: "Zoom to fit", group: "Views", keys: "Shift+1", run: () => s.set({ fitRequest: s.fitRequest + 1 }) },
       { id: "focus", label: "Toggle focus mode", group: "Views", keys: "Tab", run: () => s.set({ focus: !s.focus }) },
       { id: "zones", label: "Toggle print zones", group: "Views", keys: "Z", run: () => s.set({ showZones: !s.showZones }) },
@@ -220,6 +226,7 @@ export default function App() {
       if (mod && k === "s") { e.preventDefault(); saveNow(); return; }
       if (mod && e.key === "\\") { e.preventDefault(); const open = !(st.sideOpen && st.railOpen); st.set({ sideOpen: open, railOpen: open }); return; }
       if (mod && k === "o") { e.preventDefault(); openFile(); return; }
+      if (mod && e.shiftKey && k === "e") { e.preventDefault(); setDialog("bundle"); return; }
       if (mod && k === "e") { e.preventDefault(); exportMockup(); return; }
       if (mod && k === "n") { e.preventDefault(); setWelcome(true); return; }
       if (mod && k === "d" && st.selected) {
@@ -324,6 +331,7 @@ export default function App() {
           ))}
         </div>
         <div className="spacer" />
+        <RecordingPill />
         <div className="menu-wrap">
           <button className="btn ghost sm" onClick={() => setMenu(menu === "workspace" ? null : "workspace")} title="Workspaces">
             {WORKSPACES.find((w) => w.id === s.workspace)?.name ?? "Workspace"} <IcChevron size={12} />
@@ -336,6 +344,7 @@ export default function App() {
               ))}
               <div className="msep" />
               <button className="mi" onClick={() => { setMenu(null); s.set({ sideOpen: !s.sideOpen, railOpen: !s.sideOpen }); }}>{s.sideOpen ? "Hide panels" : "Show panels"} <span className="kbd">Ctrl \</span></button>
+              <button className="mi" onClick={() => { setMenu(null); setDialog("macros"); }} data-testid="menu-macros">Macros…</button>
               <button className="mi" onClick={() => { setMenu(null); benchmark(); }}>Run performance benchmark</button>
               {isTauri() && <button className="mi" onClick={() => { setMenu(null); updates(); }}>Check for updates</button>}
             </div>
@@ -373,6 +382,7 @@ export default function App() {
               <button className="mi" onClick={() => { setMenu(null); exportCsv(); }}><IcTable size={14} /> Spec sheet CSV</button>
               <button className="mi" onClick={() => { setMenu(null); exportFilms(); }}><IcFilm size={14} /> Screen-print film sheet (PNG)</button>
               <button className="mi" onClick={() => { setMenu(null); exportTechPack(); }}><IcTable size={14} /> Tech pack PDF</button>
+              <button className="mi" onClick={() => { setMenu(null); setDialog("bundle"); }} data-testid="menu-export-all"><IcDownload size={14} /> Export everything (ZIP)… <span className="kbd">Ctrl ⇧ E</span></button>
               <div className="msep" />
               <button className="mi" onClick={() => { setMenu(null); saveNow(); }}><IcSave size={14} /> Save project <span className="kbd">Ctrl S</span></button>
               <button className="mi" onClick={() => { setMenu(null); openFile(); }}><IcFolder size={14} /> Open project <span className="kbd">Ctrl O</span></button>
@@ -440,6 +450,8 @@ export default function App() {
       </footer>
 
       {s.presenting && <Present />}
+      {dialog === "bundle" && <BundleDialog onClose={() => setDialog(null)} />}
+      {dialog === "macros" && <MacrosDialog onClose={() => setDialog(null)} />}
       {s.palette && <CommandPalette commands={commands} onClose={() => s.set({ palette: false })} />}
       {welcome && <Welcome onClose={() => setWelcome(false)} />}
       {perf && (s.bench.running ? <div className="bench-hud">Measuring… 2,000 paths</div> : <PerfDialog onClose={() => setPerf(false)} onRun={benchmark} />)}

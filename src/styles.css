@@ -607,3 +607,20 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .brand-labels { display: flex; gap: 22px; align-items: flex-end; flex-wrap: wrap; padding: 6px 2px 12px; }
 .brand-labels figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .brand-labels img { border-radius: 3px; box-shadow: 0 8px 22px rgba(0,0,0,0.35); }
+
+/* automation */
+.auto-card { width: min(760px, 94vw); }
+.auto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 18px; }
+.auto-col { display: flex; flex-direction: column; gap: 9px; }
+.auto-plan { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-2); }
+.auto-plan b { color: var(--text); font-family: var(--mono); }
+.auto-prog { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.auto-prog .bar { height: 6px; background: var(--raised-2); border-radius: 3px; overflow: hidden; }
+.auto-prog .bar i { display: block; height: 100%; background: var(--accent); transition: width 200ms var(--ease); }
+.macro-list { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.macro { border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; background: var(--raised); }
+.macro ul { margin: 8px 0 0; padding-left: 18px; color: var(--text-2); font-size: 12px; line-height: 1.6; }
+.macro-name { font-weight: 650; background: transparent; border-color: transparent; width: 260px; }
+.rec-dot { width: 9px; height: 9px; border-radius: 50%; background: #ff3b3b; display: inline-block; animation: blink 1s steps(2) infinite; }
+.rec-pill { display: flex; align-items: center; gap: 8px; padding: 3px 4px 3px 10px; border-radius: 999px; background: rgba(255, 59, 59, 0.12); border: 1px solid rgba(255, 59, 59, 0.35); font: 600 11px var(--mono); letter-spacing: 0.08em; }
+.rec-pill .input { height: 24px; width: 130px; font-family: var(--font); letter-spacing: 0; }

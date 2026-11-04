@@ -36,3 +36,5 @@ Choices made where the build prompt was ambiguous or where this first slice devi
 | 30 | One Brand Kit per user (browser storage + app-data `brandkit.json`), not per project | A brand is shared by every design; projects keep their own brand-line override |
 | 31 | Logos are recolored to one contrasting ink where they would disappear (dark logo on a dark cover) | Keeps covers, slides, social images and tags legible without asking for a second logo file |
 | 32 | Labels are rendered at 450 ppi and placed at actual size in the PDF | One renderer for previews and print; vector type would need font embedding (later) |
+| 33 | "Export everything" writes one stored (uncompressed) ZIP with our own writer | PNG/PDF/MP4 are already compressed; one file beats dozens of save prompts; no extra dependency |
+| 34 | Macros record the difference between Record and Stop (style fields + artwork settings + any Export everything), not individual clicks | Replays exactly and safely on other designs; name, artwork pixels, drawings, style number and revision log never change |
