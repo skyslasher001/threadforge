@@ -237,7 +237,7 @@ export default function App() {
       }
       if (mod) return;
       if (e.key === "Tab") { e.preventDefault(); st.set({ focus: !st.focus }); return; }
-      if (e.key === "Escape") { st.set({ selected: null, focus: false }); setMenu(null); return; }
+      if (e.key === "Escape") { st.set({ selected: null, focus: false }); setMenu(null); setDialog(null); return; }
       if ((e.key === "Delete" || e.key === "Backspace") && st.selected) { st.removeGraphic(st.selected); return; }
       if (e.shiftKey && e.code === "Digit1") { st.set({ fitRequest: st.fitRequest + 1 }); return; }
       if (st.selected && e.key.startsWith("Arrow")) {
