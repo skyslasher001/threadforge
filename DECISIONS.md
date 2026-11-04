@@ -38,3 +38,6 @@ Choices made where the build prompt was ambiguous or where this first slice devi
 | 32 | Labels are rendered at 450 ppi and placed at actual size in the PDF | One renderer for previews and print; vector type would need font embedding (later) |
 | 33 | "Export everything" writes one stored (uncompressed) ZIP with our own writer | PNG/PDF/MP4 are already compressed; one file beats dozens of save prompts; no extra dependency |
 | 34 | Macros record the difference between Record and Stop (style fields + artwork settings + any Export everything), not individual clicks | Replays exactly and safely on other designs; name, artwork pixels, drawings, style number and revision log never change |
+| 35 | Hot folder polls the folder every 2.5 s and waits for a file's size to settle before processing | Works on every drive type (including network shares, where change events are unreliable) and never reads a half-copied file |
+| 36 | Hot folder output goes to `<folder>/THREADFORGE out/<artwork>/` with a `.processed.json` ledger | Results sit next to the inputs; files aren't processed twice; dropping a changed file again re-runs it |
+| 37 | Folders the user picks are remembered with tauri-plugin-persisted-scope | "Resume last folder" works after a restart without widening file access beyond what the user chose |

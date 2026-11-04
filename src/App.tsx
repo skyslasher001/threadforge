@@ -17,7 +17,7 @@ import { ShowcasePanel, ShowcaseView } from "./components/showcase/Showcase";
 import { Present } from "./components/showcase/Present";
 import { resumeJobs } from "./lib/aijobs";
 import { loadBrandFromAppData } from "./state/brand";
-import { BundleDialog, MacrosDialog, RecordingPill } from "./components/Automation";
+import { BundleDialog, HotFolderDialog, HotPill, MacrosDialog, RecordingPill } from "./components/Automation";
 import { loadMacrosFromAppData } from "./lib/macros";
 import { buildTechPack } from "./lib/techpack";
 import { saveFile } from "./lib/native";
@@ -43,7 +43,7 @@ export default function App() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [menu, setMenu] = useState<"export" | "theme" | "workspace" | null>(null);
   const [perf, setPerf] = useState(false);
-  const [dialog, setDialog] = useState<"bundle" | "macros" | null>(null);
+  const [dialog, setDialog] = useState<"bundle" | "macros" | "hot" | null>(null);
   const resizing = useRef<{ x: number; w: number } | null>(null);
 
   // Desktop: recover the app-data autosave if it's newer than the browser copy (crash recovery).
@@ -179,6 +179,7 @@ export default function App() {
       { id: "export-techpack", label: "Export tech pack PDF", group: "Export", run: exportTechPack },
       { id: "export-all", label: "Export everything (one ZIP)", group: "Export", keys: "Ctrl+Shift+E", run: () => setDialog("bundle") },
       { id: "macros", label: "Macros: record and replay", group: "Automation", run: () => setDialog("macros") },
+      { id: "hot", label: "Hot folder: auto-mockup dropped artwork", group: "Automation", run: () => setDialog("hot") },
       { id: "fit", label: "Zoom to fit", group: "Views", keys: "Shift+1", run: () => s.set({ fitRequest: s.fitRequest + 1 }) },
       { id: "focus", label: "Toggle focus mode", group: "Views", keys: "Tab", run: () => s.set({ focus: !s.focus }) },
       { id: "zones", label: "Toggle print zones", group: "Views", keys: "Z", run: () => s.set({ showZones: !s.showZones }) },
@@ -332,6 +333,7 @@ export default function App() {
         </div>
         <div className="spacer" />
         <RecordingPill />
+        <HotPill onOpen={() => setDialog("hot")} />
         <div className="menu-wrap">
           <button className="btn ghost sm" onClick={() => setMenu(menu === "workspace" ? null : "workspace")} title="Workspaces">
             {WORKSPACES.find((w) => w.id === s.workspace)?.name ?? "Workspace"} <IcChevron size={12} />
@@ -345,6 +347,7 @@ export default function App() {
               <div className="msep" />
               <button className="mi" onClick={() => { setMenu(null); s.set({ sideOpen: !s.sideOpen, railOpen: !s.sideOpen }); }}>{s.sideOpen ? "Hide panels" : "Show panels"} <span className="kbd">Ctrl \</span></button>
               <button className="mi" onClick={() => { setMenu(null); setDialog("macros"); }} data-testid="menu-macros">Macros…</button>
+              <button className="mi" onClick={() => { setMenu(null); setDialog("hot"); }} data-testid="menu-hot">Hot folder…</button>
               <button className="mi" onClick={() => { setMenu(null); benchmark(); }}>Run performance benchmark</button>
               {isTauri() && <button className="mi" onClick={() => { setMenu(null); updates(); }}>Check for updates</button>}
             </div>
@@ -452,6 +455,7 @@ export default function App() {
       {s.presenting && <Present />}
       {dialog === "bundle" && <BundleDialog onClose={() => setDialog(null)} />}
       {dialog === "macros" && <MacrosDialog onClose={() => setDialog(null)} />}
+      {dialog === "hot" && <HotFolderDialog onClose={() => setDialog(null)} />}
       {s.palette && <CommandPalette commands={commands} onClose={() => s.set({ palette: false })} />}
       {welcome && <Welcome onClose={() => setWelcome(false)} />}
       {perf && (s.bench.running ? <div className="bench-hud">Measuring… 2,000 paths</div> : <PerfDialog onClose={() => setPerf(false)} onRun={benchmark} />)}

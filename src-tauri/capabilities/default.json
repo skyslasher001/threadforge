@@ -1,8 +1,10 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Main window: native dialogs, user-chosen files, and app-data autosave",
-  "windows": ["main"],
+  "description": "Main window: native dialogs, user-chosen files and folders (hot folder), and app-data autosave",
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "dialog:default",
@@ -14,6 +16,8 @@
     "fs:allow-mkdir",
     "fs:allow-exists",
     "fs:allow-appdata-read-recursive",
-    "fs:allow-appdata-write-recursive"
+    "fs:allow-appdata-write-recursive",
+    "fs:allow-read-dir",
+    "fs:allow-stat"
   ]
 }

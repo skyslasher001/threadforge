@@ -211,6 +211,53 @@ async def main():
             return "2 projects updated and returned in one ZIP"
         await check("run a macro on a batch of project files", macro_files)
 
+
+        # ---------------- Hot folder (pipeline, with an in-memory folder) ----------------
+        async def hot():
+            res = await pg.evaluate("""(async () => {
+              const T = window.__threadforge, S = T.store.getState();
+              S.loadDesign({ ...T.newDesign('tee'), name: 'Hot template', bodyColor: '#1F2A44', trimColor: '#1F2A44' });
+              const io = T.hot.memoryFolder('test');
+              const art = async (hue) => { const c = document.createElement('canvas'); c.width = 600; c.height = 400; const g = c.getContext('2d');
+                g.fillStyle = `hsl(${hue} 80% 55%)`; g.beginPath(); g.arc(300, 200, 170, 0, 7); g.fill(); g.fillStyle = '#fff'; g.fillRect(180, 170, 240, 60);
+                return new Uint8Array(await (await new Promise(r => c.toBlob(r, 'image/png'))).arrayBuffer()); };
+              io.files.set('sunset-logo.png', await art(20));
+              io.files.set('wave.png', await art(200));
+              io.files.set('notes.txt', new TextEncoder().encode('ignore me'));
+              const settings = { ...T.hot.useHot.getState().settings, method: 'embroidery', colors: 2,
+                bundle: { ...T.hot.useHot.getState().settings.bundle, embroidery: ['dst'], social: ['post'] } };
+              const t0 = performance.now();
+              T.hot.startHot(io, T.store.getState().design, settings, 250);
+              const wait = async (n) => { for (let i = 0; i < 400; i++) { const it = T.hot.useHot.getState().items; if (it.filter(x => x.status === 'done' || x.status === 'failed').length >= n) return it; await new Promise(r => setTimeout(r, 150)); } return T.hot.useHot.getState().items; };
+              let items = await wait(2);
+              const first = performance.now() - t0;
+              io.files.set('third.png', await art(120));
+              items = await wait(3);
+              T.hot.stopHot();
+              const keys = [...io.files.keys()];
+              return { items: items.map(i => [i.name, i.status, i.files, i.error || '']), keys, first };
+            })()""")
+            items = {n: (st, f, err) for n, st, f, err in res["items"]}
+            keys = res["keys"]
+            if set(items) != {"sunset-logo.png", "wave.png", "third.png"} or any(v[0] != "done" for v in items.values()):
+                raise AssertionError(str(res["items"]))
+            need = ["THREADFORGE out/sunset-logo/mockups/working-front-back.png", "THREADFORGE out/sunset-logo/production/embroidery/sunset-logo.dst",
+                    "THREADFORGE out/wave/docs/wave-techpack.pdf", "THREADFORGE out/third/social/working-post-1080x1350.png", "THREADFORGE out/.processed.json"]
+            missing = [k for k in need if k not in keys]
+            if missing: raise AssertionError(f"missing {missing}; have {[k for k in keys if 'third' in k][:8]}")
+            if any("notes" in k and "out/" in k for k in keys): raise AssertionError("processed a non-image")
+            return f"3 dropped files -> {len(keys) - 3} output files; first two done in {res['first']/1000:.1f} s; .txt ignored; ledger prevents repeats"
+        await check("hot folder turns dropped artwork into deliverables", hot)
+
+        async def hot_dialog():
+            await pg.click("text=Artwork layout"); await pg.click("[data-testid=menu-hot]")
+            await pg.wait_for_selector("[data-testid=hot-log] [data-status=done]", timeout=5000)
+            n = await pg.locator("[data-testid=hot-log] [data-status=done]").count()
+            await pg.screenshot(path=f"{OUT}/p5-hot.png")
+            await pg.keyboard.press("Escape")
+            return f"activity log shows {n} finished files"
+        await check("hot folder dialog and activity log", hot_dialog)
+
         async def brand_persists():
             await pg.reload(); await pg.wait_for_timeout(1500)
             return await brand("[k.name, !!k.logo, k.colors.length]") == ["Ember Wolf", True, 2]
